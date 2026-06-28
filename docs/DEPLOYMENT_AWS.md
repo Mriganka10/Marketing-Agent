@@ -11,7 +11,7 @@ This app is packaged for either Docker-based Elastic Beanstalk or a direct EC2 s
 ## Elastic Beanstalk
 
 1. Create an Elastic Beanstalk Docker environment.
-2. Set environment variables from `.env.example`.
+2. Set production environment variables in Elastic Beanstalk. Use your local `.env` only as a private reference; do not upload or commit it.
 3. Attach an EBS volume or use a managed database for durable state.
 4. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
 5. Prefer RDS Postgres for production traffic by setting `DATABASE_URL` to a SQLAlchemy Postgres URL.
@@ -30,3 +30,8 @@ Use S3 later for uploaded brand assets, generated images, exports, and audit arc
 - Configure CloudWatch log retention and alarms for `/health`.
 - Back up the database and export audit events regularly.
 
+## Related Docs
+
+- `docs/AWS_DEPLOYMENT_WALKTHROUGH.md`
+- `docs/SECURITY_AND_COMPLIANCE.md`
+- `docs/OPERATIONS_RUNBOOK.md`

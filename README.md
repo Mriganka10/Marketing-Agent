@@ -52,3 +52,20 @@ docker run --env-file .env -p 8000:8000 marketing-agent
 ## Deployment
 
 See `docs/DEPLOYMENT_AWS.md` for Elastic Beanstalk, EC2/EBS, S3, and production hardening notes.
+
+## Documentation
+
+- `docs/PROJECT_BRIEF.md`
+- `docs/ARCHITECTURE.md`
+- `docs/AGENTS.md`
+- `docs/API.md`
+- `docs/SETUP.md`
+- `docs/DATA_MODEL_AND_AUDIT.md`
+- `docs/MODELS_AND_AGENTS.md`
+- `docs/SECURITY_AND_COMPLIANCE.md`
+- `docs/TESTING_AND_QA.md`
+- `docs/OPERATIONS_RUNBOOK.md`
+- `docs/DEPLOYMENT_AWS.md`
+- `docs/AWS_DEPLOYMENT_WALKTHROUGH.md`
+- `docs/ROADMAP.md`
+- `docs/OWNER_HANDOFF_GUIDE.md`
