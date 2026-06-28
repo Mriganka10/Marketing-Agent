@@ -8,7 +8,7 @@ def test_end_to_end_agent_loop_and_lead_capture(client):
             "audience": "SaaS founders and revenue teams",
             "value_proposition": "We launch search-led landing pages and optimize them from lead data.",
             "offers": ["SEO pages", "Lead capture", "Analytics refresh"],
-            "competitors": ["Gushwork"],
+            "competitors": ["Clay"],
             "tone": "professional",
         },
     )
@@ -70,4 +70,3 @@ def test_health_and_root(client):
     root = client.get("/")
     assert root.status_code == 200
     assert "Marketing Agent" in root.text
-

@@ -1,6 +1,6 @@
 # Marketing Agent
 
-A production-ready FastAPI prototype for a Gushwork-like multi-agent marketing loop:
+A production-ready FastAPI prototype for an AI-powered multi-agent marketing loop:
 
 Understand business -> find demand -> create pages -> capture leads -> improve pages.
 
