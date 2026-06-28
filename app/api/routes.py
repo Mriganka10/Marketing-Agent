@@ -15,6 +15,7 @@ from app.agents.llm import LLMService
 from app.agents.orchestrator import MarketingOrchestrator
 from app.agents.research import ResearchAgent
 from app.core.config import Settings, get_settings
+from app.core.content_formatting import coerce_text, normalize_sections
 from app.core.database import get_db
 from app.core.security import require_api_key
 from app.models.entities import (
@@ -117,7 +118,9 @@ def run_campaign(
 
 @router.get("/api/pages", response_model=list[LandingPageRead])
 def list_pages(db: Session = Depends(get_db)) -> list[LandingPage]:
-    return db.query(LandingPage).order_by(LandingPage.created_at.desc()).all()
+    pages = db.query(LandingPage).order_by(LandingPage.created_at.desc()).all()
+    _repair_page_content(db, pages)
+    return pages
 
 
 @router.get("/api/pages/{page_id}", response_model=LandingPageRead)
@@ -125,6 +128,7 @@ def get_page(page_id: str, db: Session = Depends(get_db)) -> LandingPage:
     page = db.get(LandingPage, page_id)
     if not page:
         raise HTTPException(status_code=404, detail="Page not found.")
+    _repair_page_content(db, [page])
     return page
 
 
@@ -203,6 +207,7 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     page = db.query(LandingPage).filter(LandingPage.slug == slug, LandingPage.status == "published").first()
     if not page:
         raise HTTPException(status_code=404, detail="Landing page not found.")
+    _repair_page_content(db, [page])
     page.visits += 1
     db.commit()
     sections = "".join(
@@ -247,3 +252,28 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
   <script src="/static/public.js"></script>
 </body>
 </html>"""
+
+
+def _repair_page_content(db: Session, pages: list[LandingPage]) -> None:
+    changed = False
+    fallback_sections = [
+        {
+            "heading": "Why it matters",
+            "body": "This page is designed to turn buyer intent into a clear next step.",
+        }
+    ]
+    for page in pages:
+        hero = coerce_text(page.hero, "")
+        cta = coerce_text(page.cta, "Request a consultation")[:160]
+        sections = normalize_sections(page.sections, fallback_sections)
+        if hero != page.hero:
+            page.hero = hero
+            changed = True
+        if cta != page.cta:
+            page.cta = cta
+            changed = True
+        if sections != page.sections:
+            page.sections = sections
+            changed = True
+    if changed:
+        db.commit()

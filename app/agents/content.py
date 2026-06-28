@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.llm import LLMService
 from app.core.audit import record_audit
+from app.core.content_formatting import coerce_text, normalize_sections, normalize_seo
 from app.models.entities import BusinessProfile, Campaign, DemandSignal, LandingPage
 
 
@@ -42,11 +43,11 @@ class ContentPageCreationAgent:
             page = LandingPage(
                 campaign_id=campaign.id,
                 slug=self._unique_slug(db, f"{business.name}-{signal.keyword}"),
-                title=str(payload.get("title", fallback["title"]))[:220],
-                hero=str(payload.get("hero", fallback["hero"])),
-                sections=payload.get("sections", fallback["sections"]) or fallback["sections"],
-                cta=str(payload.get("cta", fallback["cta"]))[:160],
-                seo=payload.get("seo", fallback["seo"]) or fallback["seo"],
+                title=coerce_text(payload.get("title"), str(fallback["title"]))[:220],
+                hero=coerce_text(payload.get("hero"), str(fallback["hero"])),
+                sections=normalize_sections(payload.get("sections"), fallback["sections"]),
+                cta=coerce_text(payload.get("cta"), str(fallback["cta"]))[:160],
+                seo=normalize_seo(payload.get("seo"), fallback["seo"]),
                 status="published" if publish else "draft",
             )
             db.add(page)
@@ -106,4 +107,3 @@ class ContentPageCreationAgent:
             slug = f"{base}-{index}"
             index += 1
         return slug
-

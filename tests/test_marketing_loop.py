@@ -70,3 +70,51 @@ def test_health_and_root(client):
     root = client.get("/")
     assert root.status_code == 200
     assert "Marketing Agent" in root.text
+
+
+def test_page_listing_repairs_structured_content(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Northstar Growth Labs",
+            "industry": "B2B marketing automation",
+            "audience": "SaaS founders and revenue teams",
+            "value_proposition": "We turn search demand into qualified pipeline.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Repair campaign",
+            "goal": "Generate qualified pipeline.",
+        },
+    ).json()["id"]
+
+    from app.core.database import SessionLocal
+    from app.models.entities import LandingPage
+
+    with SessionLocal() as db:
+        db.add(
+            LandingPage(
+                campaign_id=campaign_id,
+                slug="repair-page",
+                title="Repair page",
+                hero=(
+                    "{'heading': 'Drive Qualified Leads', "
+                    "'body': 'Create focused landing pages.', 'cta': 'Request Demo'}"
+                ),
+                sections=[],
+                cta="{'text': 'Request Demo', 'url': 'https://example.com'}",
+                seo={},
+                status="published",
+            )
+        )
+        db.commit()
+
+    pages = client.get("/api/pages").json()
+    repaired = next(page for page in pages if page["slug"] == "repair-page")
+
+    assert "{'heading'" not in repaired["hero"]
+    assert repaired["hero"] == "Drive Qualified Leads Create focused landing pages. Request Demo"
+    assert repaired["cta"] == "Request Demo"
