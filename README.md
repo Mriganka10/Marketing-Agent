@@ -20,11 +20,13 @@ OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-cp .env.example .env
+touch .env
 uvicorn app.main:app --reload
 ```
 
 Open `http://localhost:8000`.
+
+Keep local secrets and machine-specific settings in `.env`. This file is ignored by git.
 
 ## API
 
