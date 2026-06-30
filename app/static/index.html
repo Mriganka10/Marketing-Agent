@@ -20,28 +20,79 @@
         <a href="#overview">Overview</a>
         <a href="#launch">Launch</a>
         <a href="#pages">Pages</a>
-        <a href="#leads">Leads</a>
-        <a href="#audit">Audit</a>
+        <a href="#activity">Activity</a>
       </nav>
     </aside>
 
     <main>
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Marketing operations console</p>
-          <h1>AI demand generation workspace</h1>
-          <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one production-ready workflow.</p>
-        </div>
+        <div class="breadcrumb">Marketing Agent / Operations</div>
         <div class="status-pill" id="health">Checking service</div>
       </header>
 
-      <section id="overview" class="metric-grid">
-        <article><span>Businesses</span><strong id="m-businesses">0</strong></article>
-        <article><span>Campaigns</span><strong id="m-campaigns">0</strong></article>
-        <article><span>Pages</span><strong id="m-pages">0</strong></article>
-        <article><span>Leads</span><strong id="m-leads">0</strong></article>
-        <article><span>Visits</span><strong id="m-visits">0</strong></article>
-        <article><span>Conversion</span><strong id="m-rate">0%</strong></article>
+      <section id="overview" class="command-center">
+        <div class="hero-panel">
+          <p class="eyebrow">Marketing operations console</p>
+          <h1>AI demand generation workspace</h1>
+          <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
+
+          <div class="metric-grid">
+            <article><span>Businesses</span><strong id="m-businesses">0</strong></article>
+            <article><span>Campaigns</span><strong id="m-campaigns">0</strong></article>
+            <article><span>Pages</span><strong id="m-pages">0</strong></article>
+            <article><span>Leads</span><strong id="m-leads">0</strong></article>
+            <article><span>Visits</span><strong id="m-visits">0</strong></article>
+            <article><span>Conversion</span><strong id="m-rate">0%</strong></article>
+          </div>
+        </div>
+
+        <aside id="activity" class="activity-panel">
+          <div class="activity-head">
+            <div>
+              <p class="eyebrow">Lead capture + governance</p>
+              <h2>Activity control room</h2>
+            </div>
+            <div class="tab-switcher" role="tablist" aria-label="Activity views">
+              <button class="tab-button active" type="button" data-tab="leads">Leads <span id="recent-lead-count">0</span></button>
+              <button class="tab-button" type="button" data-tab="audit">Governance <span id="audit-count">0</span></button>
+            </div>
+          </div>
+
+          <div class="tab-panel active" id="leads-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Company</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="leads-table-body">
+                  <tr><td colspan="4">Captured leads will appear here.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="audit-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th>Event</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <tr><td colspan="3">Audit events will appear here.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </aside>
       </section>
 
       <section id="launch" class="workspace">
@@ -83,7 +134,7 @@
         </div>
       </section>
 
-      <section class="two-column">
+      <section class="two-column operations-grid">
         <div id="pages" class="panel">
           <div class="panel-head">
             <div>
@@ -106,27 +157,6 @@
         </div>
       </section>
 
-      <section class="two-column">
-        <div id="leads" class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Lead Capture Agent</p>
-              <h2>Recent leads</h2>
-            </div>
-          </div>
-          <div id="leads-list" class="list"></div>
-        </div>
-
-        <div id="audit" class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Governance</p>
-              <h2>Audit trail</h2>
-            </div>
-          </div>
-          <div id="audit-list" class="timeline"></div>
-        </div>
-      </section>
     </main>
   </div>
 

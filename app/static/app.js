@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [] };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [] };
 const $ = (selector) => document.querySelector(selector);
 
 async function api(path, options = {}) {
@@ -24,6 +24,24 @@ function asList(value) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString([], {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }) : "-";
+}
+
 async function loadHealth() {
   const health = await api("/health");
   $("#health").textContent = health.openai_configured ? "OpenAI ready" : "Deterministic mode";
@@ -44,7 +62,6 @@ async function loadDashboard() {
   $("#m-visits").textContent = data.visits;
   $("#m-rate").textContent = `${data.conversion_rate}%`;
   renderRecommendations(data.recommendations);
-  renderLeads(data.recent_leads);
 }
 
 async function loadPages() {
@@ -53,11 +70,11 @@ async function loadPages() {
   list.innerHTML = state.pages.length ? state.pages.map((page) => `
     <article class="row-card">
       <div>
-        <h3>${page.title}</h3>
-        <p>${page.hero}</p>
-        <span>${page.status} · ${page.visits} visits · ${page.conversions} leads</span>
+        <h3>${escapeHtml(page.title)}</h3>
+        <p>${escapeHtml(page.hero)}</p>
+        <span>${escapeHtml(page.status)} · ${page.visits} visits · ${page.conversions} leads</span>
       </div>
-      <a class="button-link" href="/p/${page.slug}" target="_blank" rel="noreferrer">Open</a>
+      <a class="button-link" href="/p/${escapeHtml(page.slug)}" target="_blank" rel="noreferrer">Open</a>
     </article>
   `).join("") : `<p class="empty">No pages generated yet.</p>`;
 }
@@ -66,39 +83,52 @@ function renderRecommendations(items) {
   $("#recommendations-list").innerHTML = items.length ? items.map((item) => `
     <article class="row-card">
       <div>
-        <span class="severity ${item.severity}">${item.severity}</span>
-        <h3>${item.recommendation}</h3>
-        <p>${item.expected_impact}</p>
+        <span class="severity ${escapeHtml(item.severity)}">${escapeHtml(item.severity)}</span>
+        <h3>${escapeHtml(item.recommendation)}</h3>
+        <p>${escapeHtml(item.expected_impact)}</p>
       </div>
     </article>
   `).join("") : `<p class="empty">Recommendations appear after a campaign run.</p>`;
 }
 
-function renderLeads(items) {
-  $("#leads-list").innerHTML = items.length ? items.map((lead) => `
-    <article class="row-card">
-      <div>
-        <h3>${lead.name}</h3>
-        <p>${lead.email}${lead.company ? ` · ${lead.company}` : ""}</p>
-        <span>${lead.status} · score ${lead.score}</span>
-      </div>
-    </article>
-  `).join("") : `<p class="empty">Captured leads will appear here.</p>`;
+async function loadLeads() {
+  state.leads = await api("/api/leads");
+  renderLeadsTable(state.leads);
+}
+
+function renderLeadsTable(items) {
+  $("#recent-lead-count").textContent = items.length;
+  $("#leads-table-body").innerHTML = items.length ? items.slice(0, 8).map((lead) => `
+    <tr>
+      <td>
+        <strong>${escapeHtml(lead.name)}</strong>
+        <small>${escapeHtml(lead.email)}</small>
+      </td>
+      <td>${escapeHtml(lead.company || "-")}</td>
+      <td><span class="status-chip ${escapeHtml(lead.status)}">${escapeHtml(lead.status)}</span></td>
+      <td><strong>${Number(lead.score).toFixed(0)}</strong></td>
+    </tr>
+  `).join("") : `<tr><td colspan="4">Captured leads will appear here.</td></tr>`;
 }
 
 async function loadAudit() {
-  const events = await api("/api/audit");
-  $("#audit-list").innerHTML = events.length ? events.map((event) => `
-    <article>
-      <strong>${event.actor}</strong>
-      <span>${event.action}</span>
-      <small>${new Date(event.created_at).toLocaleString()}</small>
-    </article>
-  `).join("") : `<p class="empty">No audit events yet.</p>`;
+  state.audit = await api("/api/audit");
+  renderAuditTable(state.audit);
+}
+
+function renderAuditTable(items) {
+  $("#audit-count").textContent = items.length;
+  $("#audit-table-body").innerHTML = items.length ? items.slice(0, 8).map((event) => `
+    <tr>
+      <td><strong>${escapeHtml(event.actor)}</strong></td>
+      <td>${escapeHtml(event.action)}</td>
+      <td>${escapeHtml(formatDate(event.created_at))}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="3">Audit events will appear here.</td></tr>`;
 }
 
 async function refreshAll() {
-  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadAudit()]);
+  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit()]);
 }
 
 $("#business-form").addEventListener("submit", async (event) => {
@@ -146,6 +176,14 @@ $("#campaign-form").addEventListener("submit", async (event) => {
 
 $("#refresh-pages").addEventListener("click", refreshAll);
 
+document.querySelectorAll(".tab-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    $(`#${button.dataset.tab}-panel`).classList.add("active");
+  });
+});
+
 loadHealth().catch((error) => toast(error.message));
 refreshAll().catch((error) => toast(error.message));
-
