@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketing Agent</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">MA</span>
+        <div>
+          <strong>Marketing Agent</strong>
+          <small>Autonomous demand engine</small>
+        </div>
+      </div>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#launch">Launch</a>
+        <a href="#pages">Pages</a>
+        <a href="#activity">Activity</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="breadcrumb">Marketing Agent / Operations</div>
+        <div class="status-pill" id="health">Checking service</div>
+      </header>
+
+      <section id="overview" class="command-center">
+        <div class="hero-panel">
+          <p class="eyebrow">Marketing operations console</p>
+          <h1>AI demand generation workspace</h1>
+          <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
+
+          <div class="metric-grid">
+            <article><span>Businesses</span><strong id="m-businesses">0</strong></article>
+            <article><span>Campaigns</span><strong id="m-campaigns">0</strong></article>
+            <article><span>Pages</span><strong id="m-pages">0</strong></article>
+            <article><span>Leads</span><strong id="m-leads">0</strong></article>
+            <article><span>Visits</span><strong id="m-visits">0</strong></article>
+            <article><span>Conversion</span><strong id="m-rate">0%</strong></article>
+          </div>
+        </div>
+
+        <aside id="activity" class="activity-panel">
+          <div class="activity-head">
+            <div>
+              <p class="eyebrow">Lead capture + governance</p>
+              <h2>Activity control room</h2>
+            </div>
+            <div class="tab-switcher" role="tablist" aria-label="Activity views">
+              <button class="tab-button active" type="button" data-tab="leads">Leads <span id="recent-lead-count">0</span></button>
+              <button class="tab-button" type="button" data-tab="audit">Governance <span id="audit-count">0</span></button>
+            </div>
+          </div>
+
+          <div class="tab-panel active" id="leads-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Company</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody id="leads-table-body">
+                  <tr><td colspan="4">Captured leads will appear here.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-panel" id="audit-panel">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th>Event</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                  <tr><td colspan="3">Audit events will appear here.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="launch" class="workspace">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Business Memory Agent</p>
+              <h2>Business profile</h2>
+            </div>
+          </div>
+          <form id="business-form" class="grid-form">
+            <label>Business name<input name="name" required value="Northstar Growth Labs" /></label>
+            <label>Website<input name="website" type="url" value="https://example.com" /></label>
+            <label>Industry<input name="industry" required value="B2B marketing automation" /></label>
+            <label>Tone<input name="tone" value="confident and consultative" /></label>
+            <label class="span-2">Audience<textarea name="audience" required>Seed to Series B SaaS founders and revenue teams</textarea></label>
+            <label class="span-2">Value proposition<textarea name="value_proposition" required>We identify underserved search demand, publish focused landing pages, capture qualified leads, and continuously refresh pages based on conversion analytics.</textarea></label>
+            <label>Offers<input name="offers" value="SEO landing pages, Lead capture automation, Conversion analytics" /></label>
+            <label>Competitors<input name="competitors" value="Clay, Copy.ai, Jasper" /></label>
+            <button type="submit">Save business</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Research + Content + Analytics</p>
+              <h2>Run campaign</h2>
+            </div>
+          </div>
+          <form id="campaign-form" class="grid-form">
+            <label>Business<select name="business_id" id="business-select" required></select></label>
+            <label>Campaign name<input name="name" required value="Q3 AI growth pages" /></label>
+            <label>Target region<input name="target_region" value="United States" /></label>
+            <label class="span-2">Goal<textarea name="goal" required>Generate qualified demo requests from companies searching for scalable AI-assisted marketing operations.</textarea></label>
+            <label class="inline"><input type="checkbox" name="publish_pages" checked /> Publish generated pages</label>
+            <button type="submit">Launch agent loop</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="two-column operations-grid">
+        <div id="pages" class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Content/Page Creation Agent</p>
+              <h2>Generated pages</h2>
+            </div>
+            <button class="ghost" id="refresh-pages">Refresh</button>
+          </div>
+          <div id="pages-list" class="list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Analytics/Refresh Agent</p>
+              <h2>Recommendations</h2>
+            </div>
+          </div>
+          <div id="recommendations-list" class="list"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
