@@ -9,6 +9,7 @@ dependencies = [
     "pydantic>=2.8.0",
     "pydantic-settings>=2.4.0",
     "sqlalchemy>=2.0.31",
+    "psycopg[binary]>=3.2.0",
     "python-multipart>=0.0.9",
     "email-validator>=2.2.0",
     "openai>=1.40.0",
@@ -29,3 +30,6 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
