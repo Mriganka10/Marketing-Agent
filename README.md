@@ -61,6 +61,8 @@ See `docs/DEPLOYMENT_AWS.md` for Elastic Beanstalk, EC2/EBS, S3, and production 
 - `docs/API.md`
 - `docs/SETUP.md`
 - `docs/DATA_MODEL_AND_AUDIT.md`
+- `docs/LEAD_SCORING_AND_CONVERSION.md`
+- `docs/POSTGRES_QUERY_ARTIFACT.md`
 - `docs/MODELS_AND_AGENTS.md`
 - `docs/SECURITY_AND_COMPLIANCE.md`
 - `docs/TESTING_AND_QA.md`

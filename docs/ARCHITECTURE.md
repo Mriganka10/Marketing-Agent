@@ -70,3 +70,27 @@ If OpenAI is not configured or an LLM call fails, agents use deterministic fallb
 - `API_KEY` protects admin write endpoints when configured.
 - `.env` is intentionally ignored by git and should contain local secrets only.
 
+## Current AWS Runtime
+
+```mermaid
+flowchart LR
+    Browser["User Browser"] --> EB["Elastic Beanstalk: marketing-agent-eb-prod"]
+    EB --> EC2["Single EC2 Docker Host"]
+    EC2 --> App["FastAPI Marketing Agent Container"]
+    App --> RDS["RDS PostgreSQL: marketing-agent-prod-postgres"]
+    App --> S3["S3: marketing-agent-prod bucket"]
+    App --> OpenAI["OpenAI API"]
+    App --> Audit["audit_events table"]
+```
+
+Current public endpoint:
+
+```text
+http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
+```
+
+PostgreSQL operational queries are maintained in:
+
+```text
+docs/POSTGRES_QUERY_ARTIFACT.md
+```

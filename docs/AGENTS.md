@@ -93,6 +93,12 @@ Lead scoring:
 - Adds score for detailed message.
 - Adds score for non-free email domain.
 
+Detailed scoring and dashboard conversion rules:
+
+```text
+docs/LEAD_SCORING_AND_CONVERSION.md
+```
+
 ## Analytics/Refresh Agent
 
 File: `app/agents/analytics_refresh.py`
@@ -121,4 +127,3 @@ Primary route:
 ```text
 POST /api/runs
 ```
-

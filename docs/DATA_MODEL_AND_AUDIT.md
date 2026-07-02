@@ -142,6 +142,16 @@ GET /api/audit
 
 Returns the 100 most recent audit events.
 
+## Operational Query Artifact
+
+Use this document for production PostgreSQL inspection queries:
+
+```text
+docs/POSTGRES_QUERY_ARTIFACT.md
+```
+
+It includes dashboard summary queries, lead scoring validation queries, page performance queries, campaign drilldowns, and audit-trail queries.
+
 ## Data Retention
 
 For production:
@@ -150,4 +160,3 @@ For production:
 - Export audit snapshots to S3 if compliance or owner reporting is needed.
 - Back up SQLite if used on single EC2.
 - Prefer RDS automated backups for production.
-

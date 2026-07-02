@@ -16,6 +16,23 @@ This app is packaged for either Docker-based Elastic Beanstalk or a direct EC2 s
 4. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
 5. Prefer RDS Postgres for production traffic by setting `DATABASE_URL` to a SQLAlchemy Postgres URL.
 
+Current production Elastic Beanstalk deployment:
+
+```text
+Application: marketing-agent-eb-app
+Environment: marketing-agent-eb-prod
+Region: ap-south-1
+URL: http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
+Database: marketing-agent-prod-postgres
+S3 bucket: marketing-agent-prod-453732174568-ap-south-1
+```
+
+Production PostgreSQL connection details and SQL inspection queries are documented in:
+
+```text
+docs/POSTGRES_QUERY_ARTIFACT.md
+```
+
 ## S3
 
 The current prototype does not require S3 because generated landing pages and leads are stored in the database.

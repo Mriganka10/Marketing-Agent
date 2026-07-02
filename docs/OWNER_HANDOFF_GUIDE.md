@@ -25,7 +25,7 @@ Mriganka10/Marketing-Agent
 Branch:
 
 ```text
-feature/prototype_development_v1
+release_branch
 ```
 
 ## How to Run Locally
@@ -108,6 +108,8 @@ Recommended production deployment:
 - `app/models/entities.py`: Database tables.
 - `app/static/`: Dashboard UI.
 - `docs/`: Owner and deployment documentation.
+- `docs/LEAD_SCORING_AND_CONVERSION.md`: Dashboard lead score and conversion explanation.
+- `docs/POSTGRES_QUERY_ARTIFACT.md`: PostgreSQL connection commands and SQL query artifact.
 
 ## Immediate Recommendations
 
@@ -118,4 +120,3 @@ Before giving this to external users:
 - Move production database to RDS Postgres.
 - Add login before public production access.
 - Add rate limiting to public lead capture.
-

@@ -114,3 +114,20 @@ Monitor:
 - LLM failures.
 - Conversion rate.
 
+Production health check:
+
+```bash
+curl http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com/health
+```
+
+Production database inspection:
+
+```text
+docs/POSTGRES_QUERY_ARTIFACT.md
+```
+
+Lead score and conversion explanation:
+
+```text
+docs/LEAD_SCORING_AND_CONVERSION.md
+```

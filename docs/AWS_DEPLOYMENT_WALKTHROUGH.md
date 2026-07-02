@@ -17,6 +17,23 @@ For a more durable production setup:
 - S3 for future assets and exports.
 - AWS Secrets Manager or EB environment variables for secrets.
 
+## Current Production Deployment
+
+The current `release_branch` deployment uses the durable production shape:
+
+| Resource | Value |
+| --- | --- |
+| Region | `ap-south-1` |
+| Elastic Beanstalk application | `marketing-agent-eb-app` |
+| Elastic Beanstalk environment | `marketing-agent-eb-prod` |
+| Public URL | `http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com` |
+| RDS PostgreSQL instance | `marketing-agent-prod-postgres` |
+| RDS endpoint | `marketing-agent-prod-postgres.c7yu6kk6ytyl.ap-south-1.rds.amazonaws.com` |
+| App S3 bucket | `marketing-agent-prod-453732174568-ap-south-1` |
+| EB source bucket | `marketing-agent-eb-source-453732174568-ap-south-1` |
+
+The app is configured with PostgreSQL in production. Local development can still use SQLite.
+
 ## 1. Prepare Local Repo
 
 ```bash
@@ -48,11 +65,7 @@ For RDS Postgres:
 DATABASE_URL=postgresql+psycopg://user:password@host:5432/marketing_agent
 ```
 
-The current dependencies do not include a Postgres driver. Add one before switching to Postgres:
-
-```text
-psycopg[binary]
-```
+The production dependency set includes `psycopg[binary]` for PostgreSQL.
 
 ## 3. Create Elastic Beanstalk Environment
 
@@ -73,7 +86,6 @@ For production traffic, prefer RDS Postgres instead of SQLite.
 Zip or deploy the repository with:
 
 - `Dockerfile`
-- `Procfile`
 - `app/`
 - `pyproject.toml`
 - `README.md`
@@ -90,7 +102,7 @@ Do not include:
 After deployment:
 
 ```bash
-curl https://your-domain.example/health
+curl http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com/health
 ```
 
 Then manually check:
@@ -111,4 +123,3 @@ Then manually check:
 - Configure backups.
 - Rotate secrets after initial setup.
 - Add rate limiting before public launch.
-
