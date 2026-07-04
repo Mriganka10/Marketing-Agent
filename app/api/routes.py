@@ -211,11 +211,15 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     _repair_page_content(db, [page])
     business = page.campaign.business if page.campaign else None
     brand_name = escape(business.name if business else "Marketing Agent")
-    theme_style = public_theme_style(
-        theme_for_business(
-            business.name if business else None,
-            business.website if business else None,
-        )
+    theme = theme_for_business(
+        business.name if business else None,
+        business.website if business else None,
+    )
+    theme_style = public_theme_style(theme)
+    logo_markup = (
+        f'<img class="brand-logo" src="{escape(theme.logo_url, quote=True)}" alt="{brand_name} logo" />'
+        if theme.logo_url
+        else f'<span class="brand-name">{brand_name}</span>'
     )
     page.visits += 1
     db.commit()
@@ -240,7 +244,9 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
 </head>
 <body class="public-page">
   <main class="public-shell">
-    <a class="back-link" href="/">{brand_name}</a>
+    <header class="public-brand-header">
+      <a class="brand-home" href="/">{logo_markup}</a>
+    </header>
     <section class="public-hero">
       <div>
         <p class="eyebrow">Generated demand page</p>

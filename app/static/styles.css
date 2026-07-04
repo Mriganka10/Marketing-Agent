@@ -467,21 +467,42 @@ button.ghost {
 }
 
 .public-shell {
-  max-width: 1160px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 24px 28px 42px;
 }
 
-.back-link {
-  display: inline-block;
-  margin-bottom: 28px;
+.public-brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--public-line, var(--line));
+}
+
+.brand-home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--public-primary, var(--accent));
   font-weight: 800;
   text-decoration: none;
 }
 
+.brand-logo {
+  display: block;
+  max-width: 190px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.brand-name {
+  font-size: 1.05rem;
+}
+
 .public-page .eyebrow {
   color: var(--public-accent, var(--accent));
+  letter-spacing: 0.08em;
 }
 
 .public-hero {
@@ -489,7 +510,7 @@ button.ghost {
   grid-template-columns: minmax(0, 1.2fr) 380px;
   gap: 34px;
   align-items: start;
-  padding: 54px 0;
+  padding: 64px 0 56px;
 }
 
 .public-hero h1 {
@@ -504,9 +525,10 @@ button.ghost {
 .lead-form {
   background: var(--public-surface, white);
   border: 1px solid var(--public-line, var(--line));
+  border-top: 5px solid var(--public-accent, var(--accent));
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: var(--shadow);
+  padding: 24px;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--public-primary, #101828) 12%, transparent);
   display: grid;
   gap: 12px;
 }
@@ -519,6 +541,7 @@ button.ghost {
 .lead-form button {
   background: var(--public-accent, var(--accent));
   color: var(--public-button-text, white);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--public-accent, var(--accent)) 24%, transparent);
 }
 
 .lead-form button:hover {
@@ -534,6 +557,7 @@ button.ghost {
 .public-sections section {
   background: var(--public-surface, white);
   border: 1px solid var(--public-line, var(--line));
+  border-top: 4px solid var(--public-accent, var(--accent));
   border-radius: 8px;
   padding: 22px;
 }

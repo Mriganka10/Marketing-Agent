@@ -5,11 +5,13 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
 from html import escape
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
 
 HEX_COLOR_PATTERN = re.compile(r"#[0-9a-fA-F]{6}\b")
+IMAGE_SOURCE_PATTERN = re.compile(r"<img[^>]+src=[\"']([^\"']+)[\"'][^>]*>", re.IGNORECASE)
+LOGO_HINT_PATTERN = re.compile(r"logo|brand", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,7 @@ class BrandTheme:
     muted: str
     line: str
     button_text: str = "#ffffff"
+    logo_url: str | None = None
 
 
 DEFAULT_THEME = BrandTheme(
@@ -43,6 +46,7 @@ BRAND_OVERRIDES: dict[str, BrandTheme] = {
         text="#101f43",
         muted="#6d7b99",
         line="#e4e9f2",
+        logo_url="https://greyradius.com/assets/images/logo.png",
     ),
     "www.greyradius.com": BrandTheme(
         primary="#101f43",
@@ -52,6 +56,7 @@ BRAND_OVERRIDES: dict[str, BrandTheme] = {
         text="#101f43",
         muted="#6d7b99",
         line="#e4e9f2",
+        logo_url="https://greyradius.com/assets/images/logo.png",
     ),
 }
 
@@ -91,7 +96,12 @@ def public_theme_style(theme: BrandTheme) -> str:
 
 @lru_cache(maxsize=128)
 def _theme_from_website(hostname: str, website: str) -> BrandTheme | None:
-    colors = _fetch_homepage_colors(hostname, website)
+    homepage = _fetch_homepage(hostname, website)
+    if not homepage:
+        return None
+
+    url, body = homepage
+    colors = [color.lower() for color in HEX_COLOR_PATTERN.findall(body)]
     if not colors:
         return None
 
@@ -115,18 +125,36 @@ def _theme_from_website(hostname: str, website: str) -> BrandTheme | None:
         muted=muted,
         line=line,
         button_text="#ffffff" if _relative_luminance(accent) < 0.58 else "#101828",
+        logo_url=_extract_logo_url(url, body),
     )
 
 
-def _fetch_homepage_colors(hostname: str, website: str) -> list[str]:
+def _fetch_homepage(hostname: str, website: str) -> tuple[str, str] | None:
     url = website if website.startswith(("http://", "https://")) else f"https://{hostname}"
     try:
         request = Request(url, headers={"User-Agent": "MarketingAgentBrandTheme/1.0"})
         with urlopen(request, timeout=2) as response:
+            final_url = response.geturl()
             body = response.read(300_000).decode("utf-8", errors="ignore")
     except Exception:
-        return []
-    return [color.lower() for color in HEX_COLOR_PATTERN.findall(body)]
+        return None
+    return final_url, body
+
+
+def _extract_logo_url(base_url: str, body: str) -> str | None:
+    candidates = []
+    for match in IMAGE_SOURCE_PATTERN.finditer(body):
+        tag = match.group(0)
+        source = match.group(1)
+        if LOGO_HINT_PATTERN.search(tag) or LOGO_HINT_PATTERN.search(source):
+            candidates.append(source)
+    if not candidates:
+        return None
+    logo_url = urljoin(base_url, candidates[0])
+    parsed = urlparse(logo_url)
+    if parsed.scheme not in {"http", "https"}:
+        return None
+    return logo_url
 
 
 def _hostname(website: str | None) -> str:

@@ -163,4 +163,5 @@ def test_public_landing_page_uses_business_brand_theme(client):
     assert public_response.status_code == 200
     assert "--public-accent: #f2673b" in public_response.text
     assert "--public-text: #101f43" in public_response.text
-    assert ">Greyradius</a>" in public_response.text
+    assert 'src="https://greyradius.com/assets/images/logo.png"' in public_response.text
+    assert 'alt="Greyradius logo"' in public_response.text
