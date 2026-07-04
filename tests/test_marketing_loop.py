@@ -165,3 +165,49 @@ def test_public_landing_page_uses_business_brand_theme(client):
     assert "--public-text: #101f43" in public_response.text
     assert 'src="https://greyradius.com/assets/images/logo.png"' in public_response.text
     assert 'alt="Greyradius logo"' in public_response.text
+
+
+def test_public_landing_page_uses_kairoz_teal_theme(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Kairoz Corporation",
+            "website": "https://kairozcorporation.com/",
+            "industry": "Skill lab and consulting",
+            "audience": "Founders and learners",
+            "value_proposition": "Future-ready skills and consulting for tomorrow's leaders.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Kairoz growth pages",
+            "goal": "Generate qualified conversations.",
+        },
+    ).json()["id"]
+
+    from app.core.database import SessionLocal
+    from app.models.entities import LandingPage
+
+    with SessionLocal() as db:
+        db.add(
+            LandingPage(
+                campaign_id=campaign_id,
+                slug="kairoz-growth",
+                title="Kairoz growth consulting",
+                hero="Build future-ready growth capability.",
+                sections=[],
+                cta="Contact Kairoz",
+                seo={},
+                status="published",
+            )
+        )
+        db.commit()
+
+    public_response = client.get("/p/kairoz-growth")
+
+    assert public_response.status_code == 200
+    assert "--public-accent: #008080" in public_response.text
+    assert "--public-line: #cce6e6" in public_response.text
+    assert "Green-Modern-Tree-Logo-Design-4-1.png" in public_response.text

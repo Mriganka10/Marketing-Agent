@@ -48,15 +48,15 @@ BRAND_OVERRIDES: dict[str, BrandTheme] = {
         line="#e4e9f2",
         logo_url="https://greyradius.com/assets/images/logo.png",
     ),
-    "www.greyradius.com": BrandTheme(
-        primary="#101f43",
-        accent="#f2673b",
+    "kairozcorporation.com": BrandTheme(
+        primary="#008080",
+        accent="#008080",
         background="#ffffff",
         surface="#ffffff",
-        text="#101f43",
-        muted="#6d7b99",
-        line="#e4e9f2",
-        logo_url="https://greyradius.com/assets/images/logo.png",
+        text="#0a1119",
+        muted="#4b535d",
+        line="#cce6e6",
+        logo_url="https://kairozcorporation.com/wp-content/uploads/2025/07/Green-Modern-Tree-Logo-Design-4-1.png",
     ),
 }
 
@@ -110,7 +110,11 @@ def _theme_from_website(hostname: str, website: str) -> BrandTheme | None:
         return None
 
     ranked = Counter(useful_colors).most_common()
-    accent = max((color for color, _count in ranked), key=_accent_score)
+    most_common_count = ranked[0][1]
+    accent = max(
+        (color for color, _count in ranked),
+        key=lambda color: _accent_score(color) + (Counter(useful_colors)[color] / most_common_count),
+    )
     dark_candidates = [color for color in useful_colors if _relative_luminance(color) < 0.24]
     text = min(dark_candidates, key=_relative_luminance) if dark_candidates else DEFAULT_THEME.text
     muted = _blend(text, "#ffffff", 0.42)
