@@ -46,7 +46,13 @@ router = APIRouter()
 
 @router.get("/", include_in_schema=False)
 def index() -> FileResponse:
-    return FileResponse("app/static/index.html")
+    return FileResponse(
+        "app/static/index.html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 def get_llm(settings: Settings = Depends(get_settings)) -> LLMService:

@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=release-ui-20260705-2" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <img class="brand-mark" src="/static/marketing-agent-logo.svg" alt="Marketing Agent logo" />
+        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=release-ui-20260705-2" alt="Marketing Agent logo" />
         <div>
           <strong>Marketing Agent</strong>
           <small>Autonomous demand engine</small>
@@ -38,7 +38,7 @@
             <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <img src="/static/marketing-agent-logo.svg" alt="" />
+            <img src="/static/marketing-agent-logo.svg?v=release-ui-20260705-2" alt="" />
             <div>
               <span>Memory</span>
               <span>Research</span>
@@ -113,6 +113,7 @@
               <p class="eyebrow">Business Memory Agent</p>
               <h2>Business profile</h2>
             </div>
+            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=release-ui-20260705-2" alt="" />
           </div>
           <form id="business-form" class="grid-form">
             <label>Business name<input name="name" required value="Northstar Growth Labs" /></label>
@@ -133,14 +134,13 @@
               <p class="eyebrow">Research + Content + Analytics</p>
               <h2>Run campaign</h2>
             </div>
+            <button class="refresh-action" id="refresh-businesses" type="button">
+              <span aria-hidden="true">↻</span>
+              Refresh business list
+            </button>
           </div>
           <form id="campaign-form" class="grid-form">
-            <label class="business-picker">Business
-              <span class="select-action">
-                <select name="business_id" id="business-select" required></select>
-                <button class="icon-button" id="refresh-businesses" type="button" aria-label="Refresh businesses" title="Refresh businesses">↻</button>
-              </span>
-            </label>
+            <label class="business-picker">Business<select name="business_id" id="business-select" required></select></label>
             <label>Campaign name<input name="name" required value="Q3 AI growth pages" /></label>
             <label>Target region<input name="target_region" value="United States" /></label>
             <label class="span-2">Goal<textarea name="goal" required>Generate qualified demo requests from companies searching for scalable AI-assisted marketing operations.</textarea></label>
@@ -179,11 +179,22 @@
   <div id="toast" class="toast" hidden></div>
   <div id="processing-overlay" class="processing-overlay" hidden role="status" aria-live="polite" aria-busy="true">
     <div class="processing-card">
-      <span class="spinner" aria-hidden="true"></span>
+      <div class="agent-loader" aria-hidden="true">
+        <span class="signal signal-a"></span>
+        <span class="signal signal-b"></span>
+        <img src="/static/marketing-agent-logo.svg?v=release-ui-20260705-2" alt="" />
+        <span class="signal signal-c"></span>
+      </div>
       <strong id="processing-title">Processing</strong>
       <p id="processing-message">Please wait while the agent completes the workflow.</p>
+      <div class="processing-steps" aria-hidden="true">
+        <span>Memory</span>
+        <span>Research</span>
+        <span>Content</span>
+        <span>Analytics</span>
+      </div>
     </div>
   </div>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=release-ui-20260705-2"></script>
 </body>
 </html>
