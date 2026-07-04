@@ -20,6 +20,23 @@ function toast(message) {
   setTimeout(() => { el.hidden = true; }, 3400);
 }
 
+function setProcessing(active, title = "Processing", message = "Please wait while the agent completes the workflow.") {
+  const overlay = $("#processing-overlay");
+  $("#processing-title").textContent = title;
+  $("#processing-message").textContent = message;
+  overlay.hidden = !active;
+  document.body.classList.toggle("is-processing", active);
+}
+
+async function withProcessing(title, message, action) {
+  setProcessing(true, title, message);
+  try {
+    return await action();
+  } finally {
+    setProcessing(false);
+  }
+}
+
 function asList(value) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
@@ -48,9 +65,13 @@ async function loadHealth() {
 }
 
 async function loadBusinesses() {
+  const current = $("#business-select")?.value;
   state.businesses = await api("/api/businesses");
   const select = $("#business-select");
   select.innerHTML = state.businesses.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
+  if (current && state.businesses.some((business) => business.id === current)) {
+    select.value = current;
+  }
 }
 
 async function loadDashboard() {
@@ -134,47 +155,55 @@ async function refreshAll() {
 $("#business-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  await api("/api/businesses", {
-    method: "POST",
-    body: JSON.stringify({
-      name: form.get("name"),
-      website: form.get("website") || null,
-      industry: form.get("industry"),
-      audience: form.get("audience"),
-      value_proposition: form.get("value_proposition"),
-      offers: asList(form.get("offers") || ""),
-      competitors: asList(form.get("competitors") || ""),
-      tone: form.get("tone") || "professional",
-    }),
+  await withProcessing("Saving business memory", "The Business Memory Agent is storing profile, website, audience, offers, and brand context.", async () => {
+    await api("/api/businesses", {
+      method: "POST",
+      body: JSON.stringify({
+        name: form.get("name"),
+        website: form.get("website") || null,
+        industry: form.get("industry"),
+        audience: form.get("audience"),
+        value_proposition: form.get("value_proposition"),
+        offers: asList(form.get("offers") || ""),
+        competitors: asList(form.get("competitors") || ""),
+        tone: form.get("tone") || "professional",
+      }),
+    });
+    await refreshAll();
   });
   toast("Business memory saved");
-  await refreshAll();
 });
 
 $("#campaign-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const campaign = await api("/api/campaigns", {
-    method: "POST",
-    body: JSON.stringify({
-      business_id: form.get("business_id"),
-      name: form.get("name"),
-      goal: form.get("goal"),
-      target_region: form.get("target_region") || "United States",
-    }),
-  });
-  await api("/api/runs", {
-    method: "POST",
-    body: JSON.stringify({
-      campaign_id: campaign.id,
-      publish_pages: form.get("publish_pages") === "on",
-    }),
+  await withProcessing("Running agent loop", "Research, content creation, lead-page publishing, analytics, and audit events are being generated.", async () => {
+    const campaign = await api("/api/campaigns", {
+      method: "POST",
+      body: JSON.stringify({
+        business_id: form.get("business_id"),
+        name: form.get("name"),
+        goal: form.get("goal"),
+        target_region: form.get("target_region") || "United States",
+      }),
+    });
+    await api("/api/runs", {
+      method: "POST",
+      body: JSON.stringify({
+        campaign_id: campaign.id,
+        publish_pages: form.get("publish_pages") === "on",
+      }),
+    });
+    await refreshAll();
   });
   toast("Agent loop completed");
-  await refreshAll();
 });
 
 $("#refresh-pages").addEventListener("click", refreshAll);
+$("#refresh-businesses").addEventListener("click", async () => {
+  await withProcessing("Refreshing businesses", "Loading the latest saved business profiles into the campaign dropdown.", loadBusinesses);
+  toast("Business list refreshed");
+});
 
 document.querySelectorAll(".tab-button").forEach((button) => {
   button.addEventListener("click", () => {

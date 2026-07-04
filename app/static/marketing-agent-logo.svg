@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Marketing Agent logo</title>
+  <desc id="desc">A polished marketing automation mark with demand signals flowing into an AI core.</desc>
+  <rect width="240" height="240" rx="44" fill="#101820"/>
+  <path d="M40 168c30-58 76-92 138-102" fill="none" stroke="#F1B856" stroke-width="12" stroke-linecap="round"/>
+  <path d="M48 178c42-22 78-29 132-23" fill="none" stroke="#15A394" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="154" cy="94" r="44" fill="#FFFFFF"/>
+  <circle cx="154" cy="94" r="25" fill="#15A394"/>
+  <circle cx="154" cy="94" r="10" fill="#101820"/>
+  <circle cx="64" cy="168" r="15" fill="#F1B856"/>
+  <circle cx="185" cy="153" r="15" fill="#FFFFFF"/>
+  <path d="M73 168h76" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M154 119v34" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M185 153l20 20" stroke="#F1B856" stroke-width="10" stroke-linecap="round"/>
+</svg>

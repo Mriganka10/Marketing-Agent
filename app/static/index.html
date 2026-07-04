@@ -10,7 +10,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">MA</span>
+        <img class="brand-mark" src="/static/marketing-agent-logo.svg" alt="Marketing Agent logo" />
         <div>
           <strong>Marketing Agent</strong>
           <small>Autonomous demand engine</small>
@@ -32,9 +32,20 @@
 
       <section id="overview" class="command-center">
         <div class="hero-panel">
-          <p class="eyebrow">Marketing operations console</p>
-          <h1>AI demand generation workspace</h1>
-          <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
+          <div class="hero-copy">
+            <p class="eyebrow">Marketing operations console</p>
+            <h1>AI demand generation workspace</h1>
+            <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <img src="/static/marketing-agent-logo.svg" alt="" />
+            <div>
+              <span>Memory</span>
+              <span>Research</span>
+              <span>Pages</span>
+              <span>Leads</span>
+            </div>
+          </div>
 
           <div class="metric-grid">
             <article><span>Businesses</span><strong id="m-businesses">0</strong></article>
@@ -124,7 +135,12 @@
             </div>
           </div>
           <form id="campaign-form" class="grid-form">
-            <label>Business<select name="business_id" id="business-select" required></select></label>
+            <label class="business-picker">Business
+              <span class="select-action">
+                <select name="business_id" id="business-select" required></select>
+                <button class="icon-button" id="refresh-businesses" type="button" aria-label="Refresh businesses" title="Refresh businesses">↻</button>
+              </span>
+            </label>
             <label>Campaign name<input name="name" required value="Q3 AI growth pages" /></label>
             <label>Target region<input name="target_region" value="United States" /></label>
             <label class="span-2">Goal<textarea name="goal" required>Generate qualified demo requests from companies searching for scalable AI-assisted marketing operations.</textarea></label>
@@ -161,6 +177,13 @@
   </div>
 
   <div id="toast" class="toast" hidden></div>
+  <div id="processing-overlay" class="processing-overlay" hidden role="status" aria-live="polite" aria-busy="true">
+    <div class="processing-card">
+      <span class="spinner" aria-hidden="true"></span>
+      <strong id="processing-title">Processing</strong>
+      <p id="processing-message">Please wait while the agent completes the workflow.</p>
+    </div>
+  </div>
   <script src="/static/app.js"></script>
 </body>
 </html>
