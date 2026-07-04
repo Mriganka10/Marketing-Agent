@@ -113,6 +113,12 @@ Outputs:
 
 - `RefreshRecommendation` records.
 
+Client-facing SEO and productionization guide:
+
+```text
+docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md
+```
+
 ## Orchestrator
 
 File: `app/agents/orchestrator.py`

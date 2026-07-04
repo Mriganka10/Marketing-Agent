@@ -38,6 +38,12 @@ Recommended:
 - Slack notifications.
 - S3 asset storage.
 
+SEO productionization details:
+
+```text
+docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md
+```
+
 ## Phase 4: Page Optimization
 
 Recommended:
@@ -59,4 +65,3 @@ Recommended:
 - Tenant-scoped database access.
 - Usage metering.
 - Admin analytics.
-

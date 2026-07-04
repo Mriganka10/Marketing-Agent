@@ -109,6 +109,7 @@ Recommended production deployment:
 - `app/static/`: Dashboard UI.
 - `docs/`: Owner and deployment documentation.
 - `docs/LEAD_SCORING_AND_CONVERSION.md`: Dashboard lead score and conversion explanation.
+- `docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md`: Client-facing SEO and Analytics/Refresh Agent explanation.
 - `docs/POSTGRES_QUERY_ARTIFACT.md`: PostgreSQL connection commands and SQL query artifact.
 
 ## Immediate Recommendations
