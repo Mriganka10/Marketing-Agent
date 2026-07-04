@@ -118,3 +118,49 @@ def test_page_listing_repairs_structured_content(client):
     assert "{'heading'" not in repaired["hero"]
     assert repaired["hero"] == "Drive Qualified Leads Create focused landing pages. Request Demo"
     assert repaired["cta"] == "Request Demo"
+
+
+def test_public_landing_page_uses_business_brand_theme(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Greyradius",
+            "website": "https://greyradius.com/",
+            "industry": "Growth consulting",
+            "audience": "SaaS founders and revenue teams",
+            "value_proposition": "We build your growth strategy and execute with you.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "GreyRadius growth pages",
+            "goal": "Generate qualified growth consulting conversations.",
+        },
+    ).json()["id"]
+
+    from app.core.database import SessionLocal
+    from app.models.entities import LandingPage
+
+    with SessionLocal() as db:
+        db.add(
+            LandingPage(
+                campaign_id=campaign_id,
+                slug="greyradius-growth",
+                title="Greyradius growth consulting",
+                hero="Build your growth strategy and execution engine.",
+                sections=[],
+                cta="Start a conversation",
+                seo={},
+                status="published",
+            )
+        )
+        db.commit()
+
+    public_response = client.get("/p/greyradius-growth")
+
+    assert public_response.status_code == 200
+    assert "--public-accent: #f2673b" in public_response.text
+    assert "--public-text: #101f43" in public_response.text
+    assert ">Greyradius</a>" in public_response.text

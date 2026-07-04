@@ -15,6 +15,7 @@ from app.agents.llm import LLMService
 from app.agents.orchestrator import MarketingOrchestrator
 from app.agents.research import ResearchAgent
 from app.core.config import Settings, get_settings
+from app.core.brand_theme import public_theme_style, theme_for_business
 from app.core.content_formatting import coerce_text, normalize_sections
 from app.core.database import get_db
 from app.core.security import require_api_key
@@ -208,6 +209,14 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     if not page:
         raise HTTPException(status_code=404, detail="Landing page not found.")
     _repair_page_content(db, [page])
+    business = page.campaign.business if page.campaign else None
+    brand_name = escape(business.name if business else "Marketing Agent")
+    theme_style = public_theme_style(
+        theme_for_business(
+            business.name if business else None,
+            business.website if business else None,
+        )
+    )
     page.visits += 1
     db.commit()
     sections = "".join(
@@ -227,10 +236,11 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
   <title>{title}</title>
   <meta name="description" content="{description}" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <style>{theme_style}</style>
 </head>
 <body class="public-page">
   <main class="public-shell">
-    <a class="back-link" href="/">Marketing Agent</a>
+    <a class="back-link" href="/">{brand_name}</a>
     <section class="public-hero">
       <div>
         <p class="eyebrow">Generated demand page</p>
