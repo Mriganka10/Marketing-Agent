@@ -235,7 +235,7 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
   <meta name="description" content="{description}" />
-  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/styles.css?v=brand-theme-20260705" />
   <style>{theme_style}</style>
 </head>
 <body class="public-page">

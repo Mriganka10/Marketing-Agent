@@ -71,6 +71,10 @@ def theme_for_business(name: str | None, website: str | None) -> BrandTheme:
 
 def public_theme_style(theme: BrandTheme) -> str:
     variables = {
+        "--accent": theme.accent,
+        "--ink": theme.text,
+        "--muted": theme.muted,
+        "--line": theme.line,
         "--public-primary": theme.primary,
         "--public-accent": theme.accent,
         "--public-accent-dark": _darken(theme.accent),
