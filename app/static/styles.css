@@ -126,16 +126,16 @@ main {
 h1, h2, h3, p { margin-top: 0; }
 h1 {
   max-width: 780px;
-  font-size: clamp(2rem, 3.2vw, 3.55rem);
+  font-size: clamp(2rem, 2.65vw, 3.05rem);
   margin-bottom: 12px;
-  line-height: 1;
+  line-height: 1.04;
 }
 h2 { font-size: 1.18rem; margin-bottom: 0; }
 h3 { font-size: 1rem; margin-bottom: 7px; }
 p { color: var(--muted); line-height: 1.6; }
 
 .header-copy {
-  max-width: 720px;
+  max-width: 620px;
   margin-bottom: 0;
   font-size: 1rem;
 }
@@ -804,6 +804,42 @@ button.ghost {
   .hero-panel { grid-template-columns: 1fr; }
   .hero-visual { justify-items: start; }
   .hero-visual div { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1440px) {
+  .command-center {
+    grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+  }
+
+  .hero-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-visual {
+    justify-items: start;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .hero-visual img {
+    width: 92px;
+    height: 92px;
+    border-radius: 18px;
+  }
+
+  .hero-visual div {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .command-center,
+  .workspace,
+  .two-column,
+  .public-hero,
+  .public-sections {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
