@@ -15,7 +15,7 @@ from app.agents.llm import LLMService
 from app.agents.orchestrator import MarketingOrchestrator
 from app.agents.research import ResearchAgent
 from app.core.config import Settings, get_settings
-from app.core.brand_theme import public_theme_style, theme_for_business
+from app.core.brand_theme import public_theme_style, theme_for_business, theme_from_dict
 from app.core.content_formatting import coerce_text, normalize_sections
 from app.core.database import get_db
 from app.core.security import require_api_key
@@ -211,7 +211,7 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     _repair_page_content(db, [page])
     business = page.campaign.business if page.campaign else None
     brand_name = escape(business.name if business else "Marketing Agent")
-    theme = theme_for_business(
+    theme = theme_from_dict(page.seo.get("brand_theme")) or theme_for_business(
         business.name if business else None,
         business.website if business else None,
     )

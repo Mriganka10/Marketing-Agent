@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.llm import LLMService
 from app.core.audit import record_audit
+from app.core.brand_theme import theme_for_business, theme_to_dict
 from app.core.content_formatting import coerce_text, normalize_sections, normalize_seo
 from app.models.entities import BusinessProfile, Campaign, DemandSignal, LandingPage
 
@@ -26,6 +27,7 @@ class ContentPageCreationAgent:
         publish: bool,
     ) -> list[LandingPage]:
         pages: list[LandingPage] = []
+        brand_theme = theme_for_business(business.name, business.website)
         for signal in signals[:4]:
             fallback = self._fallback_page(business, campaign, signal)
             payload = self.llm.json_completion(
@@ -35,11 +37,16 @@ class ContentPageCreationAgent:
                 ),
                 user=(
                     f"Business: {business.name}\nAudience: {business.audience}\nTone: {business.tone}\n"
+                    f"Business website: {business.website or 'not provided'}\n"
+                    f"Brand style: primary {brand_theme.primary}, accent {brand_theme.accent}, "
+                    f"text {brand_theme.text}, background {brand_theme.background}\n"
                     f"Value proposition: {business.value_proposition}\nCampaign goal: {campaign.goal}\n"
                     f"Keyword: {signal.keyword}\nIntent: {signal.intent}"
                 ),
                 fallback=fallback,
             )
+            seo = normalize_seo(payload.get("seo"), fallback["seo"])
+            seo["brand_theme"] = theme_to_dict(brand_theme)
             page = LandingPage(
                 campaign_id=campaign.id,
                 slug=self._unique_slug(db, f"{business.name}-{signal.keyword}"),
@@ -47,7 +54,7 @@ class ContentPageCreationAgent:
                 hero=coerce_text(payload.get("hero"), str(fallback["hero"])),
                 sections=normalize_sections(payload.get("sections"), fallback["sections"]),
                 cta=coerce_text(payload.get("cta"), str(fallback["cta"]))[:160],
-                seo=normalize_seo(payload.get("seo"), fallback["seo"]),
+                seo=seo,
                 status="published" if publish else "draft",
             )
             db.add(page)

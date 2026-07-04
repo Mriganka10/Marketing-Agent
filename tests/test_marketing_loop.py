@@ -36,6 +36,7 @@ def test_end_to_end_agent_loop_and_lead_capture(client):
     assert len(run["demand_signals"]) >= 3
     assert len(run["pages"]) >= 3
     assert run["recommendations"]
+    assert run["pages"][0]["seo"]["brand_theme"]["accent"] == "#0f766e"
 
     page = run["pages"][0]
     public_response = client.get(f"/p/{page['slug']}")
@@ -211,3 +212,29 @@ def test_public_landing_page_uses_kairoz_teal_theme(client):
     assert "--public-accent: #008080" in public_response.text
     assert "--public-line: #cce6e6" in public_response.text
     assert "Green-Modern-Tree-Logo-Design-4-1.png" in public_response.text
+
+
+def test_content_agent_stores_business_specific_brand_theme(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Kairoz Corporation",
+            "website": "https://kairozcorporation.com/",
+            "industry": "Skill lab and consulting",
+            "audience": "Founders and leadership teams",
+            "value_proposition": "We help leaders build future-ready skills and growth systems.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Kairoz business-specific pages",
+            "goal": "Generate qualified consulting conversations.",
+        },
+    ).json()["id"]
+
+    run = client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True}).json()
+
+    assert run["pages"][0]["seo"]["brand_theme"]["accent"] == "#008080"
+    assert "kairozcorporation.com" in run["pages"][0]["seo"]["brand_theme"]["logo_url"]

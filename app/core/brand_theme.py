@@ -74,6 +74,43 @@ def theme_for_business(name: str | None, website: str | None) -> BrandTheme:
     return _theme_from_website(hostname, website or "") or DEFAULT_THEME
 
 
+def theme_to_dict(theme: BrandTheme) -> dict[str, str]:
+    data = {
+        "primary": theme.primary,
+        "accent": theme.accent,
+        "background": theme.background,
+        "surface": theme.surface,
+        "text": theme.text,
+        "muted": theme.muted,
+        "line": theme.line,
+        "button_text": theme.button_text,
+    }
+    if theme.logo_url:
+        data["logo_url"] = theme.logo_url
+    return data
+
+
+def theme_from_dict(value: object) -> BrandTheme | None:
+    if not isinstance(value, dict):
+        return None
+    required = ("primary", "accent", "background", "surface", "text", "muted", "line")
+    if not all(isinstance(value.get(key), str) and _is_hex(value[key]) for key in required):
+        return None
+    button_text = value.get("button_text", "#ffffff")
+    logo_url = value.get("logo_url")
+    return BrandTheme(
+        primary=value["primary"],
+        accent=value["accent"],
+        background=value["background"],
+        surface=value["surface"],
+        text=value["text"],
+        muted=value["muted"],
+        line=value["line"],
+        button_text=button_text if isinstance(button_text, str) and _is_hex(button_text) else "#ffffff",
+        logo_url=logo_url if isinstance(logo_url, str) and _is_http_url(logo_url) else None,
+    )
+
+
 def public_theme_style(theme: BrandTheme) -> str:
     variables = {
         "--accent": theme.accent,
@@ -169,6 +206,14 @@ def _hostname(website: str | None) -> str:
         return ""
     parsed = urlparse(candidate if "://" in candidate else f"https://{candidate}")
     return (parsed.hostname or "").removeprefix("www.").lower()
+
+
+def _is_hex(value: str) -> bool:
+    return bool(HEX_COLOR_PATTERN.fullmatch(value))
+
+
+def _is_http_url(value: str) -> bool:
+    return urlparse(value).scheme in {"http", "https"}
 
 
 def _is_brand_color(hex_color: str) -> bool:
