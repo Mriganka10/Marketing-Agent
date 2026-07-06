@@ -245,6 +245,51 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     assert any(item["query"] == "automated seo agents" for item in overview["top_queries"])
 
 
+def test_seo_sync_preserves_google_error_status(client, monkeypatch):
+    from app.core.config import get_settings
+    from app.integrations.google_marketing import GoogleMarketingIntegrationError
+
+    monkeypatch.setenv("GA4_PROPERTY_ID", "544328945")
+    monkeypatch.setenv("GA4_MEASUREMENT_ID", "G-KZ3N4G2S20")
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "https://agenticgrowthlabs.com/")
+    monkeypatch.setenv("GOOGLE_SERVICE_ACCOUNT_JSON", "{}")
+    get_settings.cache_clear()
+
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Agentic Growth Labs",
+            "website": "https://agenticgrowthlabs.com",
+            "industry": "SEO automation",
+            "audience": "Marketing teams automating SEO operations",
+            "value_proposition": "We automate demand research, page creation, and SEO refresh.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Permission fallback",
+            "goal": "Generate SEO automation demos.",
+        },
+    ).json()["id"]
+    client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True})
+
+    def fake_fetch(self, *, days=28, row_limit=25000):
+        raise GoogleMarketingIntegrationError("Search Console sync failed: permission denied")
+
+    monkeypatch.setattr("app.agents.seo_analytics.GoogleMarketingIntegration.fetch", fake_fetch)
+
+    sync = client.post("/api/seo/sync")
+    assert sync.status_code == 200
+    assert sync.json()["mode"] == "google_sync_error_fallback"
+    assert "permission denied" in sync.json()["fallback_reason"]
+
+    integrations = client.get("/api/seo/integrations").json()
+    assert integrations["mode"] == "google_sync_error_fallback"
+    assert all(item["status"] == "error" for item in integrations["connections"])
+
+
 def test_public_landing_page_uses_business_brand_theme(client):
     business_id = client.post(
         "/api/businesses",

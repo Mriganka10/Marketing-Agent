@@ -59,10 +59,22 @@ class SeoAnalyticsAgent:
             "search_console_site_url": configured["search_console_site_url"],
             "google_service_account": configured["google_service_account"],
         }
-        mode = "live_google_integrated" if all(required.values()) else "demo_with_first_party_events"
         connections = db.query(SeoIntegrationConnection).order_by(
             SeoIntegrationConnection.created_at.desc()
         ).all()
+        connection_statuses = {item.provider: item.status for item in connections}
+        if connection_statuses and any(status == "error" for status in connection_statuses.values()):
+            mode = "google_sync_error_fallback"
+        elif (
+            all(required.values())
+            and connection_statuses.get("google_search_console") == "live_synced"
+            and connection_statuses.get("ga4") == "live_synced"
+        ):
+            mode = "live_google_integrated"
+        elif all(required.values()):
+            mode = "google_credentials_configured"
+        else:
+            mode = "demo_with_first_party_events"
         return {
             "mode": mode,
             "configured": configured,
@@ -104,6 +116,7 @@ class SeoAnalyticsAgent:
 
     def sync_metrics(self, db: Session, settings: Settings) -> dict[str, object]:
         google = GoogleMarketingIntegration(settings)
+        google_error: str | None = None
         if google.is_configured:
             try:
                 result = self._sync_live_google_metrics(db, settings, google.fetch())
@@ -117,26 +130,27 @@ class SeoAnalyticsAgent:
                 db.commit()
                 return result
             except GoogleMarketingIntegrationError as exc:
+                google_error = str(exc)
                 self._upsert_connection(
                     db,
                     provider="google_search_console",
                     property_ref=settings.google_search_console_site_url or "not_configured",
                     status="error",
-                    config={"message": str(exc)},
+                    config={"message": google_error},
                 )
                 self._upsert_connection(
                     db,
                     provider="ga4",
                     property_ref=settings.ga4_property_id or settings.ga4_measurement_id or "not_configured",
                     status="error",
-                    config={"message": str(exc)},
+                    config={"message": google_error},
                 )
                 record_audit(
                     db,
                     actor=self.name,
                     action="seo_metrics_sync_failed",
                     entity_type="seo_metrics",
-                    metadata={"message": str(exc), "fallback": "demo_with_first_party_events"},
+                    metadata={"message": google_error, "fallback": "demo_with_first_party_events"},
                 )
                 db.commit()
 
@@ -152,17 +166,23 @@ class SeoAnalyticsAgent:
             db,
             provider="google_search_console",
             property_ref=settings.google_search_console_site_url or settings.public_base_url,
-            status="ready_for_credentials" if not google.is_configured else "configured_without_live_data",
-            config={"required": self._setup_steps(settings)},
+            status="error"
+            if google_error
+            else ("ready_for_credentials" if not google.is_configured else "configured_without_live_data"),
+            config={"message": google_error} if google_error else {"required": self._setup_steps(settings)},
         )
         self._upsert_connection(
             db,
             provider="ga4",
             property_ref=settings.ga4_property_id or settings.ga4_measurement_id or "not_configured",
-            status="ready_for_credentials"
-            if not (settings.ga4_property_id and settings.google_service_account_json)
-            else "configured_without_live_data",
-            config={"required": self._setup_steps(settings)},
+            status="error"
+            if google_error
+            else (
+                "ready_for_credentials"
+                if not (settings.ga4_property_id and settings.google_service_account_json)
+                else "configured_without_live_data"
+            ),
+            config={"message": google_error} if google_error else {"required": self._setup_steps(settings)},
         )
         record_audit(
             db,
@@ -180,6 +200,7 @@ class SeoAnalyticsAgent:
             "pages_synced": len(pages),
             "records_written": created,
             "mode": self.integration_status(db, settings)["mode"],
+            "fallback_reason": google_error,
         }
 
     def _sync_live_google_metrics(
