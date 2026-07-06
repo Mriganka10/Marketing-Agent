@@ -53,6 +53,17 @@ PUBLIC_BASE_URL=http://localhost:8015
 ALLOWED_ORIGINS=["*"]
 ```
 
+Optional local Google analytics values:
+
+```bash
+GA4_PROPERTY_ID=544328945
+GA4_MEASUREMENT_ID=G-KZ3N4G2S20
+GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:agenticgrowthlabs.com
+GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account", "...": "..."}'
+```
+
+Keep the service account JSON in `.env` or AWS SSM only. Do not commit it.
+
 If `DATABASE_URL` is blank, the app falls back to SQLite:
 
 ```text
@@ -102,4 +113,3 @@ source .venv/bin/activate
 ### Broken Homebrew Python
 
 If Homebrew Python fails with `platform.mac_ver() returned an empty value`, use the bundled Python command shown in the virtual environment recreation section.
-

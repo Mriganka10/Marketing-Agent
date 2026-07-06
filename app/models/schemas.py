@@ -164,6 +164,8 @@ class PageRefreshVersionRead(BaseModel):
 
 class SeoPageScore(BaseModel):
     page_id: str
+    business_id: str | None = None
+    business_name: str | None = None
     slug: str
     title: str
     url: str

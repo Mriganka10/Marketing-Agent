@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, seoBusiness: "all" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "launch", "seo", "pages", "activity"]);
 
@@ -115,9 +115,9 @@ async function loadSeoOverview() {
   $("#seo-position").textContent = Number(state.seo.average_position).toFixed(1);
   $("#seo-sessions").textContent = state.seo.sessions.toLocaleString();
   $("#seo-leads").textContent = state.seo.leads.toLocaleString();
-  $("#seo-refresh-count").textContent = `${state.seo.pages_needing_refresh} need refresh`;
   renderSeoReadiness(state.seo.integration_status);
-  renderSeoPages(state.seo.page_scores);
+  renderSeoBusinessFilter(state.seo.page_scores);
+  renderSeoPages(filteredSeoPages());
   renderSeoQueries(state.seo.top_queries);
 }
 
@@ -154,14 +154,36 @@ function scoreClass(score) {
   return "high";
 }
 
+function renderSeoBusinessFilter(items) {
+  const select = $("#seo-business-filter");
+  const current = state.seoBusiness;
+  const companies = [...new Map(items
+    .filter((page) => page.business_id)
+    .map((page) => [page.business_id, page.business_name || "Unknown company"])
+  ).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  select.innerHTML = `<option value="all">All companies</option>${companies.map(([id, name]) => (
+    `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`
+  )).join("")}`;
+  select.value = companies.some(([id]) => id === current) ? current : "all";
+  state.seoBusiness = select.value;
+}
+
+function filteredSeoPages() {
+  const pages = state.seo?.page_scores || [];
+  return state.seoBusiness === "all"
+    ? pages
+    : pages.filter((page) => page.business_id === state.seoBusiness);
+}
+
 function renderSeoPages(items) {
+  $("#seo-refresh-count").textContent = `${items.filter((page) => page.overall_score < 70).length} need refresh`;
   $("#seo-pages-list").innerHTML = items.length ? items.map((page) => `
     <article class="seo-report-card">
       <div class="seo-report-head">
         <div>
           <span class="severity ${scoreClass(page.overall_score)}">SEO score ${Number(page.overall_score).toFixed(0)}</span>
           <h3>${escapeHtml(page.title)}</h3>
-          <p>Page: <a href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">${escapeHtml(formatPath(page.url))}</a></p>
+          <p>${escapeHtml(page.business_name || "Unknown company")} · Page: <a href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">${escapeHtml(formatPath(page.url))}</a></p>
         </div>
         <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open page</a>
       </div>
@@ -304,6 +326,10 @@ $("#sync-seo").addEventListener("click", async () => {
     await refreshAll();
   });
   toast("SEO metrics synced");
+});
+$("#seo-business-filter").addEventListener("change", (event) => {
+  state.seoBusiness = event.target.value;
+  renderSeoPages(filteredSeoPages());
 });
 $("#refresh-businesses").addEventListener("click", async () => {
   await withProcessing("Refreshing businesses", "Loading the latest saved business profiles into the campaign dropdown.", loadBusinesses);

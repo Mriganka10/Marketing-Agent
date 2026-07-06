@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=release-client-ui-20260706-3" />
+  <link rel="stylesheet" href="/static/styles.css?v=release-company-filter-20260706-4" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="Marketing Agent logo" />
+        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=release-company-filter-20260706-4" alt="Marketing Agent logo" />
         <div>
           <strong>Marketing Agent</strong>
           <small>Autonomous demand engine</small>
@@ -39,7 +39,7 @@
             <p class="header-copy">Run the full SEO growth loop from business memory to demand research, landing pages, lead capture, Google analytics, and refresh decisions.</p>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <img src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
+            <img src="/static/marketing-agent-logo.svg?v=release-company-filter-20260706-4" alt="" />
             <div>
               <span>Memory</span>
               <span>Research</span>
@@ -101,7 +101,13 @@
           <div class="seo-page-performance">
             <div class="mini-head">
               <h3>Page performance and refresh plan</h3>
-              <span id="seo-refresh-count">0 need refresh</span>
+              <div class="mini-actions">
+                <label for="seo-business-filter">Company</label>
+                <select id="seo-business-filter">
+                  <option value="all">All companies</option>
+                </select>
+                <span id="seo-refresh-count">0 need refresh</span>
+              </div>
             </div>
             <div id="seo-pages-list" class="list"></div>
           </div>
@@ -122,7 +128,7 @@
               <p class="eyebrow">Business Memory Agent</p>
               <h2>Business profile</h2>
             </div>
-            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
+            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=release-company-filter-20260706-4" alt="" />
           </div>
           <form id="business-form" class="grid-form">
             <label>Business name<input name="name" required value="Northstar Growth Labs" /></label>
@@ -239,7 +245,7 @@
       <div class="agent-loader" aria-hidden="true">
         <span class="signal signal-a"></span>
         <span class="signal signal-b"></span>
-        <img src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
+        <img src="/static/marketing-agent-logo.svg?v=release-company-filter-20260706-4" alt="" />
         <span class="signal signal-c"></span>
       </div>
       <strong id="processing-title">Processing</strong>
@@ -252,6 +258,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=release-client-ui-20260706-3"></script>
+  <script src="/static/app.js?v=release-company-filter-20260706-4"></script>
 </body>
 </html>

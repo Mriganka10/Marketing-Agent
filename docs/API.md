@@ -139,3 +139,33 @@ GET /api/audit
 
 Returns recent audit events.
 
+## SEO Analytics
+
+```http
+GET /api/seo/integrations
+GET /api/seo/overview
+POST /api/seo/sync
+```
+
+`GET /api/seo/integrations` returns Google setup and sync mode.
+
+Expected production mode:
+
+```text
+live_google_integrated
+```
+
+`GET /api/seo/overview` returns page performance cards with:
+
+- owning business id and name,
+- page URL,
+- Google impressions,
+- Google clicks,
+- CTR,
+- average position,
+- GA4 sessions,
+- leads,
+- conversion rate,
+- recommendation.
+
+`POST /api/seo/sync` pulls Google Search Console and GA4 metrics into the database.

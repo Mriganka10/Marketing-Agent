@@ -561,6 +561,29 @@ tbody tr:last-child td { border-bottom: 0; }
   margin-bottom: 12px;
 }
 
+.mini-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mini-actions label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.mini-actions select {
+  min-width: 210px;
+  height: 38px;
+  padding: 7px 34px 7px 11px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  background-color: #ffffff;
+}
+
 .seo-score-card {
   align-items: flex-start;
 }

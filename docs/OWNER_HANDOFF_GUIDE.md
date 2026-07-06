@@ -63,14 +63,17 @@ OPENAI_MODEL=gpt-5.5
 
 ## How to Demo
 
-1. Open dashboard.
+1. Open `https://agenticgrowthlabs.com`.
 2. Save the sample business profile or enter a real business.
 3. Select the business in Run Campaign.
 4. Click `Launch agent loop`.
-5. Scroll to Generated Pages.
+5. Open `Pages`.
 6. Open a public page.
 7. Submit a test lead.
-8. Return to dashboard and confirm leads, visits, conversions, recommendations, and audit events.
+8. Open `Activity` and confirm the lead/audit events.
+9. Open `SEO Analytics`.
+10. Click `Sync SEO metrics`.
+11. Use the `Company` dropdown to filter page stats for one organization.
 
 ## Validation Commands
 
@@ -110,6 +113,9 @@ Recommended production deployment:
 - `docs/`: Owner and deployment documentation.
 - `docs/LEAD_SCORING_AND_CONVERSION.md`: Dashboard lead score and conversion explanation.
 - `docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md`: Client-facing SEO and Analytics/Refresh Agent explanation.
+- `docs/GOOGLE_SEO_ANALYTICS_SETUP.md`: GA4 and Search Console setup performed for production.
+- `docs/PRODUCTION_FUNCTIONAL_FLOW.md`: Current feature flow and production checks.
+- `docs/END_TO_END_TEST_CASES.md`: Manual test cases from business save through Google search and metrics review.
 - `docs/POSTGRES_QUERY_ARTIFACT.md`: PostgreSQL connection commands and SQL query artifact.
 
 ## Immediate Recommendations
@@ -118,6 +124,5 @@ Before giving this to external users:
 
 - Rotate the OpenAI key if it was exposed in any screenshots or chats.
 - Set `API_KEY`.
-- Move production database to RDS Postgres.
 - Add login before public production access.
 - Add rate limiting to public lead capture.

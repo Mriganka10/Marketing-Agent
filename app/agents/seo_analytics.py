@@ -366,8 +366,11 @@ class SeoAnalyticsAgent:
             sessions=sessions,
             conversion_rate=conversion_rate,
         )
+        business = page.campaign.business if page.campaign else None
         return SeoPageScore(
             page_id=page.id,
+            business_id=business.id if business else None,
+            business_name=business.name if business else None,
             slug=page.slug,
             title=page.title,
             url=urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}"),

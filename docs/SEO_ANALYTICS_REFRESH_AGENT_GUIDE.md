@@ -6,6 +6,13 @@ This document explains how the SEO and Analytics/Refresh Agent works in the Mark
 
 The Analytics/Refresh Agent is the feedback-loop agent in the Marketing Agent platform.
 
+Production update:
+
+```text
+The production system now connects to GA4 and Google Search Console through a Google service account.
+When Google APIs return successfully, the SEO Analytics dashboard runs in live_google_integrated mode.
+```
+
 It helps answer:
 
 ```text
@@ -204,25 +211,34 @@ The current system can:
 - Store recommendations in PostgreSQL.
 - Store audit events for governance.
 
-## Current Limitations
+## Current Production Capabilities And Remaining Limits
 
-The current system does not yet connect to external SEO platforms.
+The production system now connects to external Google platforms:
 
-It does not yet collect:
+- Google Search Console through `sc-domain:agenticgrowthlabs.com`.
+- GA4 through property `544328945`.
+- Browser tracking through measurement ID `G-KZ3N4G2S20`.
+- Service account authentication through Google Cloud project `innate-beacon-433717-d2`.
+
+It collects or displays:
 
 - Google Search impressions.
 - Google Search clicks.
 - Google Search CTR.
 - Average ranking position.
 - Search queries bringing traffic.
-- Indexed status.
-- Sitemap submission status.
-- GA4 sessions and engagement metrics.
-- Scroll depth.
-- Form-start events.
-- CTA-click events.
+- GA4 sessions and engagement metrics when GA4 has processed rows.
+- First-party page events such as page view, CTA click, form start, form submit, and scroll depth.
+- Lead count and conversion rate.
+- Page-level SEO health scores.
+- Page-level recommendations.
 
-This means the current Analytics/Refresh Agent is based on first-party app data, not full search-engine performance data.
+Remaining practical limits:
+
+- New Search Console properties often show no rows until Google has crawled, indexed, and processed data.
+- New GA4 streams may take hours before standard reports and Data API rows appear.
+- Google ranking is not guaranteed; the system improves discoverability and recommendations but cannot force top search placement.
+- Indexing can take hours or days even after sitemap submission and URL inspection.
 
 ## Production SEO Architecture
 
@@ -242,7 +258,7 @@ flowchart LR
     Recommendations --> Dashboard["Client Dashboard"]
 ```
 
-## Recommended Production Integrations
+## Implemented Production Integrations
 
 ### 1. Google Search Console
 
@@ -280,7 +296,20 @@ Reference:
 https://developers.google.com/webmaster-tools
 ```
 
+Current config:
+
+```text
+GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:agenticgrowthlabs.com
+```
+
 ### 2. Google Analytics 4
+
+Current config:
+
+```text
+GA4_PROPERTY_ID=544328945
+GA4_MEASUREMENT_ID=G-KZ3N4G2S20
+```
 
 Purpose:
 

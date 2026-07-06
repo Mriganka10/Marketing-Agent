@@ -167,6 +167,8 @@ def test_seo_analytics_sync_sitemap_and_structured_public_page(client):
     assert overview["pages_published"] >= 1
     assert overview["organic_impressions"] > 0
     assert overview["page_scores"]
+    assert overview["page_scores"][0]["business_id"] == business_id
+    assert overview["page_scores"][0]["business_name"] == "Agentic Growth Labs"
     assert overview["top_queries"]
 
 
