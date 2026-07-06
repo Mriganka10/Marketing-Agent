@@ -3,13 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record_audit
 from app.core.config import Settings
+from app.integrations.google_marketing import (
+    GoogleMarketingData,
+    GoogleMarketingIntegration,
+    GoogleMarketingIntegrationError,
+)
 from app.models.entities import (
     AnalyticsPageMetric,
     Campaign,
@@ -49,13 +54,20 @@ class SeoAnalyticsAgent:
             "search_console_site_url": bool(settings.google_search_console_site_url),
             "google_service_account": bool(settings.google_service_account_json),
         }
-        mode = "live_ready" if all(configured.values()) else "demo_with_first_party_events"
+        required = {
+            "ga4_property_id": configured["ga4_property_id"],
+            "search_console_site_url": configured["search_console_site_url"],
+            "google_service_account": configured["google_service_account"],
+        }
+        mode = "live_google_integrated" if all(required.values()) else "demo_with_first_party_events"
         connections = db.query(SeoIntegrationConnection).order_by(
             SeoIntegrationConnection.created_at.desc()
         ).all()
         return {
             "mode": mode,
             "configured": configured,
+            "required_for_live": required,
+            "setup_steps": self._setup_steps(settings),
             "connections": [
                 {
                     "provider": item.provider,
@@ -91,6 +103,43 @@ class SeoAnalyticsAgent:
         return event
 
     def sync_metrics(self, db: Session, settings: Settings) -> dict[str, object]:
+        google = GoogleMarketingIntegration(settings)
+        if google.is_configured:
+            try:
+                result = self._sync_live_google_metrics(db, settings, google.fetch())
+                record_audit(
+                    db,
+                    actor=self.name,
+                    action="seo_metrics_synced",
+                    entity_type="seo_metrics",
+                    metadata=result,
+                )
+                db.commit()
+                return result
+            except GoogleMarketingIntegrationError as exc:
+                self._upsert_connection(
+                    db,
+                    provider="google_search_console",
+                    property_ref=settings.google_search_console_site_url or "not_configured",
+                    status="error",
+                    config={"message": str(exc)},
+                )
+                self._upsert_connection(
+                    db,
+                    provider="ga4",
+                    property_ref=settings.ga4_property_id or settings.ga4_measurement_id or "not_configured",
+                    status="error",
+                    config={"message": str(exc)},
+                )
+                record_audit(
+                    db,
+                    actor=self.name,
+                    action="seo_metrics_sync_failed",
+                    entity_type="seo_metrics",
+                    metadata={"message": str(exc), "fallback": "demo_with_first_party_events"},
+                )
+                db.commit()
+
         pages = db.query(LandingPage).filter(LandingPage.status == "published").all()
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         created = 0
@@ -103,7 +152,8 @@ class SeoAnalyticsAgent:
             db,
             provider="google_search_console",
             property_ref=settings.google_search_console_site_url or settings.public_base_url,
-            status="ready_for_credentials" if not settings.google_service_account_json else "configured",
+            status="ready_for_credentials" if not google.is_configured else "configured_without_live_data",
+            config={"required": self._setup_steps(settings)},
         )
         self._upsert_connection(
             db,
@@ -111,7 +161,8 @@ class SeoAnalyticsAgent:
             property_ref=settings.ga4_property_id or settings.ga4_measurement_id or "not_configured",
             status="ready_for_credentials"
             if not (settings.ga4_property_id and settings.google_service_account_json)
-            else "configured",
+            else "configured_without_live_data",
+            config={"required": self._setup_steps(settings)},
         )
         record_audit(
             db,
@@ -129,6 +180,103 @@ class SeoAnalyticsAgent:
             "pages_synced": len(pages),
             "records_written": created,
             "mode": self.integration_status(db, settings)["mode"],
+        }
+
+    def _sync_live_google_metrics(
+        self,
+        db: Session,
+        settings: Settings,
+        data: GoogleMarketingData,
+    ) -> dict[str, object]:
+        pages = db.query(LandingPage).filter(LandingPage.status == "published").all()
+        page_by_url = {self._canonical_url(settings, page): page for page in pages}
+        page_by_path = {f"/p/{page.slug}": page for page in pages}
+        metric_date = datetime.combine(data.end_date, datetime.min.time())
+        records = 0
+
+        db.query(SeoSearchMetric).filter(
+            SeoSearchMetric.date == metric_date,
+            SeoSearchMetric.source == "google_search_console",
+        ).delete()
+        db.query(AnalyticsPageMetric).filter(
+            AnalyticsPageMetric.date == metric_date,
+            AnalyticsPageMetric.source == "ga4",
+        ).delete()
+
+        for row in data.search_rows:
+            page = page_by_url.get(row.page_url.rstrip("/")) or page_by_path.get(urlparse(row.page_url).path)
+            if not page:
+                continue
+            db.add(
+                SeoSearchMetric(
+                    page_id=page.id,
+                    date=metric_date,
+                    query=row.query[:255],
+                    country=row.country[:80],
+                    device=row.device[:40],
+                    impressions=row.impressions,
+                    clicks=row.clicks,
+                    ctr=row.ctr,
+                    average_position=row.position,
+                    source="google_search_console",
+                )
+            )
+            records += 1
+
+        for row in data.analytics_rows:
+            page = page_by_path.get(row.path.rstrip("/")) or page_by_path.get(row.path)
+            if not page:
+                continue
+            db.add(
+                AnalyticsPageMetric(
+                    page_id=page.id,
+                    date=metric_date,
+                    sessions=row.sessions,
+                    engaged_sessions=row.engaged_sessions,
+                    cta_clicks=0,
+                    form_starts=0,
+                    form_submits=row.conversions,
+                    scroll_75=0,
+                    traffic_source=row.traffic_source[:120],
+                    device=row.device[:40],
+                    country=row.country[:80],
+                    source="ga4",
+                )
+            )
+            records += 1
+
+        self._upsert_connection(
+            db,
+            provider="google_search_console",
+            property_ref=settings.google_search_console_site_url or settings.public_base_url,
+            status="live_synced",
+            config={
+                "start_date": data.start_date.isoformat(),
+                "end_date": data.end_date.isoformat(),
+                "rows": len(data.search_rows),
+            },
+        )
+        self._upsert_connection(
+            db,
+            provider="ga4",
+            property_ref=settings.ga4_property_id or settings.ga4_measurement_id or "not_configured",
+            status="live_synced",
+            config={
+                "start_date": data.start_date.isoformat(),
+                "end_date": data.end_date.isoformat(),
+                "rows": len(data.analytics_rows),
+            },
+        )
+        return {
+            "pages_synced": len(pages),
+            "records_written": records,
+            "mode": "live_google_integrated",
+            "date_range": {
+                "start": data.start_date.isoformat(),
+                "end": data.end_date.isoformat(),
+            },
+            "search_console_rows": len(data.search_rows),
+            "ga4_rows": len(data.analytics_rows),
         }
 
     def overview(self, db: Session, settings: Settings) -> SeoOverview:
@@ -333,7 +481,13 @@ class SeoAnalyticsAgent:
         )
 
     def _upsert_connection(
-        self, db: Session, *, provider: str, property_ref: str, status: str
+        self,
+        db: Session,
+        *,
+        provider: str,
+        property_ref: str,
+        status: str,
+        config: dict[str, object] | None = None,
     ) -> None:
         connection = (
             db.query(SeoIntegrationConnection)
@@ -345,7 +499,39 @@ class SeoAnalyticsAgent:
             db.add(connection)
         connection.property_ref = property_ref
         connection.status = status
+        connection.config = config or {}
         connection.last_sync_at = datetime.now()
+
+    def _setup_steps(self, settings: Settings) -> list[dict[str, object]]:
+        return [
+            {
+                "key": "ga4_property_id",
+                "label": "Set GA4 property id",
+                "complete": bool(settings.ga4_property_id),
+                "value": settings.ga4_property_id or "",
+            },
+            {
+                "key": "ga4_measurement_id",
+                "label": "Set GA4 web measurement id for browser events",
+                "complete": bool(settings.ga4_measurement_id),
+                "value": settings.ga4_measurement_id or "",
+            },
+            {
+                "key": "google_search_console_site_url",
+                "label": "Set Search Console property URL",
+                "complete": bool(settings.google_search_console_site_url),
+                "value": settings.google_search_console_site_url or "",
+            },
+            {
+                "key": "google_service_account_json",
+                "label": "Attach service account JSON with GA4 and Search Console read access",
+                "complete": bool(settings.google_service_account_json),
+                "value": "configured" if settings.google_service_account_json else "",
+            },
+        ]
+
+    def _canonical_url(self, settings: Settings, page: LandingPage) -> str:
+        return urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}").rstrip("/")
 
     def _top_queries(self, db: Session) -> list[dict[str, object]]:
         rows = (

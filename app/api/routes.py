@@ -245,6 +245,14 @@ def seo_overview(
     return SeoAnalyticsAgent().overview(db, settings)
 
 
+@router.get("/api/seo/integrations")
+def seo_integrations(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, object]:
+    return SeoAnalyticsAgent().integration_status(db, settings)
+
+
 @router.post(
     "/api/seo/sync",
     dependencies=[Depends(require_api_key)],

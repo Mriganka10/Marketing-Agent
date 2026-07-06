@@ -39,6 +39,8 @@ Keep local secrets and machine-specific settings in `.env`. This file is ignored
 - `POST /api/leads`
 - `GET /api/dashboard`
 - `GET /api/audit`
+- `GET /api/seo/integrations`
+- `POST /api/seo/sync`
 
 If `API_KEY` is set, protected write APIs require `x-api-key`.
 
@@ -63,6 +65,7 @@ See `docs/DEPLOYMENT_AWS.md` for Elastic Beanstalk, EC2/EBS, S3, and production 
 - `docs/DATA_MODEL_AND_AUDIT.md`
 - `docs/LEAD_SCORING_AND_CONVERSION.md`
 - `docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md`
+- `docs/GOOGLE_SEO_ANALYTICS_SETUP.md`
 - `docs/POSTGRES_QUERY_ARTIFACT.md`
 - `docs/MODELS_AND_AGENTS.md`
 - `docs/SECURITY_AND_COMPLIANCE.md`

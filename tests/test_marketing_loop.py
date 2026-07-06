@@ -170,6 +170,81 @@ def test_seo_analytics_sync_sitemap_and_structured_public_page(client):
     assert overview["top_queries"]
 
 
+def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
+    from datetime import date
+
+    from app.core.config import get_settings
+    from app.integrations.google_marketing import GA4PageRow, GoogleMarketingData, SearchConsoleRow
+
+    monkeypatch.setenv("GA4_PROPERTY_ID", "153293282")
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "https://agenticgrowthlabs.com/")
+    monkeypatch.setenv("GOOGLE_SERVICE_ACCOUNT_JSON", "{}")
+    get_settings.cache_clear()
+
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Agentic Growth Labs",
+            "website": "https://agenticgrowthlabs.com",
+            "industry": "SEO automation",
+            "audience": "Marketing teams automating SEO operations",
+            "value_proposition": "We automate demand research, page creation, and SEO refresh.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Live Google sync",
+            "goal": "Generate SEO automation demos.",
+        },
+    ).json()["id"]
+    page = client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True}).json()[
+        "pages"
+    ][0]
+
+    def fake_fetch(self, *, days=28, row_limit=25000):
+        return GoogleMarketingData(
+            start_date=date(2026, 7, 1),
+            end_date=date(2026, 7, 5),
+            search_rows=[
+                SearchConsoleRow(
+                    page_url=f"https://agenticgrowthlabs.com/p/{page['slug']}",
+                    query="automated seo agents",
+                    country="IN",
+                    device="DESKTOP",
+                    clicks=12,
+                    impressions=240,
+                    ctr=0.05,
+                    position=4.2,
+                )
+            ],
+            analytics_rows=[
+                GA4PageRow(
+                    path=f"/p/{page['slug']}",
+                    sessions=33,
+                    engaged_sessions=24,
+                    event_count=80,
+                    conversions=3,
+                    traffic_source="Organic Search",
+                    device="DESKTOP",
+                    country="India",
+                )
+            ],
+        )
+
+    monkeypatch.setattr("app.agents.seo_analytics.GoogleMarketingIntegration.fetch", fake_fetch)
+
+    sync = client.post("/api/seo/sync")
+    assert sync.status_code == 200
+    assert sync.json()["mode"] == "live_google_integrated"
+    assert sync.json()["records_written"] == 2
+
+    overview = client.get("/api/seo/overview").json()
+    assert overview["integration_status"]["mode"] == "live_google_integrated"
+    assert any(item["query"] == "automated seo agents" for item in overview["top_queries"])
+
+
 def test_public_landing_page_uses_business_brand_theme(client):
     business_id = client.post(
         "/api/businesses",

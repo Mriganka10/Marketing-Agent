@@ -96,6 +96,7 @@ async function loadSeoOverview() {
   $("#seo-sessions").textContent = state.seo.sessions.toLocaleString();
   $("#seo-leads").textContent = state.seo.leads.toLocaleString();
   $("#seo-refresh-count").textContent = `${state.seo.pages_needing_refresh} need refresh`;
+  renderSeoReadiness(state.seo.integration_status);
   renderSeoPages(state.seo.page_scores);
   renderSeoQueries(state.seo.top_queries);
 }
@@ -154,6 +155,24 @@ function renderSeoQueries(items) {
       <span>${Number(item.impressions).toLocaleString()} impressions · ${Number(item.clicks).toLocaleString()} clicks · avg. ${Number(item.average_position).toFixed(1)}</span>
     </article>
   `).join("") : `<p class="empty">Search queries appear after SEO metric sync.</p>`;
+}
+
+function renderSeoReadiness(status) {
+  const steps = status.setup_steps || [];
+  const connections = status.connections || [];
+  $("#seo-readiness").innerHTML = `
+    <div>
+      <strong>${escapeHtml(status.mode.replaceAll("_", " "))}</strong>
+      <span>${connections.length ? escapeHtml(connections.map((item) => `${item.provider}: ${item.status}`).join(" · ")) : "Waiting for GA4 and Search Console credentials"}</span>
+    </div>
+    <div class="readiness-checks">
+      ${steps.map((step) => `
+        <span class="${step.complete ? "complete" : "pending"}">
+          ${step.complete ? "✓" : "!"} ${escapeHtml(step.label)}
+        </span>
+      `).join("")}
+    </div>
+  `;
 }
 
 async function loadLeads() {

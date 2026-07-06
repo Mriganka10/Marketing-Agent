@@ -191,6 +191,15 @@ def get_secure(name: str) -> str:
     return client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
 
 
+def get_optional_secure(name: str, default: str = "") -> str:
+    try:
+        return get_secure(name)
+    except ClientError as exc:
+        if exc.response["Error"].get("Code") == "ParameterNotFound":
+            return default
+        raise
+
+
 def ensure_app_and_version() -> None:
     eb = client("elasticbeanstalk")
     apps = eb.describe_applications(ApplicationNames=[APP_NAME]).get("Applications", [])
@@ -212,10 +221,11 @@ def ensure_app_and_version() -> None:
 def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dict[str, str]]:
     db_url = get_secure(f"{SSM_PATH}/database-url")
     openai_key = get_secure(f"{SSM_PATH}/openai-api-key")
-    try:
-        openai_model = get_secure(f"{SSM_PATH}/openai-model")
-    except Exception:
-        openai_model = "gpt-5.5"
+    openai_model = get_optional_secure(f"{SSM_PATH}/openai-model", "gpt-5.5")
+    ga4_measurement_id = get_optional_secure(f"{SSM_PATH}/ga4-measurement-id")
+    ga4_property_id = get_optional_secure(f"{SSM_PATH}/ga4-property-id")
+    search_console_site_url = get_optional_secure(f"{SSM_PATH}/google-search-console-site-url")
+    google_service_account_json = get_optional_secure(f"{SSM_PATH}/google-service-account-json")
     secret_key = get_secure(f"{SSM_PATH}/secret-key")
     app_s3_bucket = get_secure(f"{SSM_PATH}/s3-bucket")
     env = {
@@ -231,6 +241,10 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
         "OPENAI_REASONING_EFFORT": "medium",
         "OPENAI_EMBEDDING_MODEL": "text-embedding-3-large",
         "PUBLIC_BASE_URL": PUBLIC_BASE_URL,
+        "GA4_MEASUREMENT_ID": ga4_measurement_id,
+        "GA4_PROPERTY_ID": ga4_property_id,
+        "GOOGLE_SEARCH_CONSOLE_SITE_URL": search_console_site_url,
+        "GOOGLE_SERVICE_ACCOUNT_JSON": google_service_account_json,
         "ALLOWED_ORIGINS": '["*"]',
         "S3_BUCKET": app_s3_bucket,
         "AWS_REGION": REGION,
