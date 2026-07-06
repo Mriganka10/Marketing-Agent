@@ -19,6 +19,7 @@
       <nav>
         <a href="#overview">Overview</a>
         <a href="#launch">Launch</a>
+        <a href="#seo">SEO Analytics</a>
         <a href="#pages">Pages</a>
         <a href="#activity">Activity</a>
       </nav>
@@ -104,6 +105,45 @@
             </div>
           </div>
         </aside>
+      </section>
+
+      <section id="seo" class="panel seo-command">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">SEO Analytics Agent + Refresh Agent</p>
+            <h2>Search performance command center</h2>
+          </div>
+          <button class="refresh-action" id="sync-seo" type="button">
+            <span aria-hidden="true">↻</span>
+            Sync SEO metrics
+          </button>
+        </div>
+        <div class="seo-status-strip">
+          <article><span>GSC + GA4 mode</span><strong id="seo-mode">Checking</strong></article>
+          <article><span>Indexed pages</span><strong id="seo-indexed">0</strong></article>
+          <article><span>Impressions</span><strong id="seo-impressions">0</strong></article>
+          <article><span>Clicks</span><strong id="seo-clicks">0</strong></article>
+          <article><span>CTR</span><strong id="seo-ctr">0%</strong></article>
+          <article><span>Avg. position</span><strong id="seo-position">0</strong></article>
+          <article><span>Sessions</span><strong id="seo-sessions">0</strong></article>
+          <article><span>SEO leads</span><strong id="seo-leads">0</strong></article>
+        </div>
+        <div class="seo-grid">
+          <div>
+            <div class="mini-head">
+              <h3>Page health scores</h3>
+              <span id="seo-refresh-count">0 need refresh</span>
+            </div>
+            <div id="seo-pages-list" class="list"></div>
+          </div>
+          <div>
+            <div class="mini-head">
+              <h3>Top search queries</h3>
+              <span>GSC-ready</span>
+            </div>
+            <div id="seo-queries-list" class="list"></div>
+          </div>
+        </div>
       </section>
 
       <section id="launch" class="workspace">

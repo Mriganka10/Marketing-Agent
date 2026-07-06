@@ -100,6 +100,106 @@ class RecommendationRead(BaseModel):
     status: str
     created_at: datetime
 
+
+class SeoSearchMetricRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    page_id: str
+    date: datetime
+    query: str
+    country: str
+    device: str
+    impressions: int
+    clicks: int
+    ctr: float
+    average_position: float
+    source: str
+
+
+class AnalyticsPageMetricRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    page_id: str
+    date: datetime
+    sessions: int
+    engaged_sessions: int
+    cta_clicks: int
+    form_starts: int
+    form_submits: int
+    scroll_75: int
+    traffic_source: str
+    device: str
+    country: str
+    source: str
+
+
+class PageEventCreate(BaseModel):
+    page_id: str | None = None
+    campaign_id: str | None = None
+    event_type: str = Field(min_length=2, max_length=80)
+    session_id: str | None = None
+    path: str | None = None
+    referrer: str | None = None
+    event_metadata: dict[str, Any] = {}
+
+
+class PageRefreshVersionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    page_id: str
+    version_number: int
+    change_summary: str
+    old_title: str | None
+    new_title: str | None
+    old_hero: str | None
+    new_hero: str | None
+    old_cta: str | None
+    new_cta: str | None
+    created_by: str
+    created_at: datetime
+
+
+class SeoPageScore(BaseModel):
+    page_id: str
+    slug: str
+    title: str
+    url: str
+    technical_score: float
+    content_score: float
+    search_score: float
+    conversion_score: float
+    overall_score: float
+    impressions: int
+    clicks: int
+    ctr: float
+    average_position: float
+    sessions: int
+    engaged_sessions: int
+    leads: int
+    conversion_rate: float
+    diagnosis: str
+    next_action: str
+
+
+class SeoOverview(BaseModel):
+    pages_published: int
+    indexed_pages: int
+    organic_impressions: int
+    organic_clicks: int
+    ctr: float
+    average_position: float
+    sessions: int
+    engaged_sessions: int
+    leads: int
+    conversion_rate: float
+    pages_needing_refresh: int
+    top_queries: list[dict[str, Any]]
+    integration_status: dict[str, Any]
+    page_scores: list[SeoPageScore]
+
 class RunRequest(BaseModel):
     campaign_id: str
     publish_pages: bool = True

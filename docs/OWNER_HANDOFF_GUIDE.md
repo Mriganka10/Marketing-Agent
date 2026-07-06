@@ -58,7 +58,7 @@ Important values:
 DATABASE_URL=sqlite:///./data/marketing_agent.db
 OPENAI_ENABLED=true
 OPENAI_API_KEY=your-openai-key
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 ## How to Demo

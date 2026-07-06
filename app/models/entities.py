@@ -30,6 +30,7 @@ class BusinessProfile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     campaigns: Mapped[list["Campaign"]] = relationship(back_populates="business")
+    seo_connections: Mapped[list["SeoIntegrationConnection"]] = relationship(back_populates="business")
 
 
 class Campaign(Base):
@@ -48,6 +49,7 @@ class Campaign(Base):
     demand_signals: Mapped[list["DemandSignal"]] = relationship(back_populates="campaign")
     pages: Mapped[list["LandingPage"]] = relationship(back_populates="campaign")
     leads: Mapped[list["Lead"]] = relationship(back_populates="campaign")
+    seo_runs: Mapped[list["SeoRecommendationRun"]] = relationship(back_populates="campaign")
 
 
 class DemandSignal(Base):
@@ -84,6 +86,10 @@ class LandingPage(Base):
 
     campaign: Mapped[Campaign] = relationship(back_populates="pages")
     leads: Mapped[list["Lead"]] = relationship(back_populates="page")
+    search_metrics: Mapped[list["SeoSearchMetric"]] = relationship(back_populates="page")
+    analytics_metrics: Mapped[list["AnalyticsPageMetric"]] = relationship(back_populates="page")
+    events: Mapped[list["PageEvent"]] = relationship(back_populates="page")
+    refresh_versions: Mapped[list["PageRefreshVersion"]] = relationship(back_populates="page")
 
 
 class Lead(Base):
@@ -128,3 +134,134 @@ class AuditEvent(Base):
     entity_id: Mapped[str | None] = mapped_column(String(80))
     event_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class SeoIntegrationConnection(Base):
+    __tablename__ = "seo_integration_connections"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    business_id: Mapped[str | None] = mapped_column(ForeignKey("business_profiles.id"))
+    provider: Mapped[str] = mapped_column(String(80), nullable=False)
+    property_ref: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(40), default="demo_mode")
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime)
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    business: Mapped[BusinessProfile | None] = relationship(back_populates="seo_connections")
+
+
+class SeoSearchMetric(Base):
+    __tablename__ = "seo_search_metrics"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str] = mapped_column(ForeignKey("landing_pages.id"), nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    query: Mapped[str] = mapped_column(String(255), nullable=False)
+    country: Mapped[str] = mapped_column(String(80), default="ALL")
+    device: Mapped[str] = mapped_column(String(40), default="ALL")
+    impressions: Mapped[int] = mapped_column(Integer, default=0)
+    clicks: Mapped[int] = mapped_column(Integer, default=0)
+    ctr: Mapped[float] = mapped_column(Float, default=0)
+    average_position: Mapped[float] = mapped_column(Float, default=0)
+    source: Mapped[str] = mapped_column(String(80), default="demo")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    page: Mapped[LandingPage] = relationship(back_populates="search_metrics")
+
+
+class AnalyticsPageMetric(Base):
+    __tablename__ = "analytics_page_metrics"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str] = mapped_column(ForeignKey("landing_pages.id"), nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    sessions: Mapped[int] = mapped_column(Integer, default=0)
+    engaged_sessions: Mapped[int] = mapped_column(Integer, default=0)
+    cta_clicks: Mapped[int] = mapped_column(Integer, default=0)
+    form_starts: Mapped[int] = mapped_column(Integer, default=0)
+    form_submits: Mapped[int] = mapped_column(Integer, default=0)
+    scroll_75: Mapped[int] = mapped_column(Integer, default=0)
+    traffic_source: Mapped[str] = mapped_column(String(120), default="organic")
+    device: Mapped[str] = mapped_column(String(40), default="ALL")
+    country: Mapped[str] = mapped_column(String(80), default="ALL")
+    source: Mapped[str] = mapped_column(String(80), default="first_party")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    page: Mapped[LandingPage] = relationship(back_populates="analytics_metrics")
+
+
+class PageEvent(Base):
+    __tablename__ = "page_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str | None] = mapped_column(ForeignKey("landing_pages.id"))
+    campaign_id: Mapped[str | None] = mapped_column(ForeignKey("campaigns.id"))
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    session_id: Mapped[str | None] = mapped_column(String(120))
+    path: Mapped[str | None] = mapped_column(String(255))
+    referrer: Mapped[str | None] = mapped_column(String(255))
+    user_agent: Mapped[str | None] = mapped_column(Text)
+    event_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    page: Mapped[LandingPage | None] = relationship(back_populates="events")
+
+
+class PageRefreshVersion(Base):
+    __tablename__ = "page_refresh_versions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str] = mapped_column(ForeignKey("landing_pages.id"), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, default=1)
+    change_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    old_title: Mapped[str | None] = mapped_column(String(220))
+    new_title: Mapped[str | None] = mapped_column(String(220))
+    old_hero: Mapped[str | None] = mapped_column(Text)
+    new_hero: Mapped[str | None] = mapped_column(Text)
+    old_cta: Mapped[str | None] = mapped_column(String(160))
+    new_cta: Mapped[str | None] = mapped_column(String(160))
+    created_by: Mapped[str] = mapped_column(String(120), default="seo_refresh_agent")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    page: Mapped[LandingPage] = relationship(back_populates="refresh_versions")
+
+
+class SeoRecommendationRun(Base):
+    __tablename__ = "seo_recommendation_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    campaign_id: Mapped[str | None] = mapped_column(ForeignKey("campaigns.id"))
+    run_type: Mapped[str] = mapped_column(String(80), default="weekly_refresh")
+    pages_scored: Mapped[int] = mapped_column(Integer, default=0)
+    recommendations_created: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(40), default="completed")
+    source: Mapped[str] = mapped_column(String(80), default="first_party_and_demo")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    campaign: Mapped[Campaign | None] = relationship(back_populates="seo_runs")
+
+
+class KeywordRankSnapshot(Base):
+    __tablename__ = "keyword_rank_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str | None] = mapped_column(ForeignKey("landing_pages.id"))
+    keyword: Mapped[str] = mapped_column(String(255), nullable=False)
+    region: Mapped[str] = mapped_column(String(120), default="global")
+    rank_position: Mapped[float | None] = mapped_column(Float)
+    search_engine: Mapped[str] = mapped_column(String(80), default="google")
+    source: Mapped[str] = mapped_column(String(80), default="gsc")
+    captured_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class SitemapSubmission(Base):
+    __tablename__ = "sitemap_submissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    sitemap_url: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(80), default="google_search_console")
+    status: Mapped[str] = mapped_column(String(40), default="pending")
+    response: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

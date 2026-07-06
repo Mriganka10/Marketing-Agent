@@ -54,7 +54,7 @@ API_KEY=admin-write-api-key
 DATABASE_URL=sqlite:///./data/marketing_agent.db
 OPENAI_ENABLED=true
 OPENAI_API_KEY=your-openai-key
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 PUBLIC_BASE_URL=https://your-domain.example
 ALLOWED_ORIGINS=["https://your-domain.example"]
 ```

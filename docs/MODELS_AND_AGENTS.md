@@ -13,7 +13,7 @@ Settings:
 ```bash
 OPENAI_ENABLED=true
 OPENAI_API_KEY=your-key
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 ## Recommended Model
@@ -21,7 +21,7 @@ OPENAI_MODEL=gpt-4.1-mini
 Use:
 
 ```text
-gpt-4.1-mini
+gpt-5.5
 ```
 
 Reason:

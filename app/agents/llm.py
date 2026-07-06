@@ -17,18 +17,22 @@ class LLMService:
         if not self.client:
             return fallback
         try:
-            response = self.client.chat.completions.create(
-                model=self.settings.openai_model,
-                temperature=0.35,
-                response_format={"type": "json_object"},
-                messages=[
+            payload = {
+                "model": self.settings.openai_model,
+                "temperature": 0.35,
+                "response_format": {"type": "json_object"},
+                "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
-            )
+            }
+            if self.settings.openai_reasoning_effort:
+                payload["extra_body"] = {
+                    "reasoning": {"effort": self.settings.openai_reasoning_effort}
+                }
+            response = self.client.chat.completions.create(**payload)
             content = response.choices[0].message.content or "{}"
             parsed = json.loads(content)
             return parsed if isinstance(parsed, dict) else fallback
         except Exception:
             return fallback
-

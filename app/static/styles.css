@@ -392,6 +392,69 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 20px;
 }
 
+.seo-command {
+  display: grid;
+  gap: 20px;
+}
+
+.seo-status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.seo-status-strip article {
+  padding: 14px 15px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 8px;
+  background: #fbfdfd;
+  box-shadow: var(--shadow-soft);
+}
+
+.seo-status-strip span,
+.mini-head span,
+.query-card span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.seo-status-strip strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 1.55rem;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.seo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 18px;
+}
+
+.mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.seo-score-card {
+  align-items: flex-start;
+}
+
+.query-card {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
 .panel {
   padding: 24px;
   box-shadow: var(--shadow);
@@ -537,6 +600,7 @@ button.ghost {
 .severity.high { color: var(--bad); }
 .severity.medium { color: var(--warn); }
 .severity.low { color: var(--good); }
+.severity.good { color: var(--good); }
 
 .empty {
   margin: 0;
@@ -800,7 +864,8 @@ button.ghost {
   .sidebar { position: relative; height: auto; }
   .command-center { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .workspace, .two-column, .public-hero, .public-sections { grid-template-columns: 1fr; }
+  .workspace, .two-column, .public-hero, .public-sections, .seo-grid { grid-template-columns: 1fr; }
+  .seo-status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-panel { grid-template-columns: 1fr; }
   .hero-visual { justify-items: start; }
   .hero-visual div { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -846,6 +911,7 @@ button.ghost {
   main, .public-shell { padding: 18px; }
   .topbar, .row-card { align-items: stretch; flex-direction: column; }
   .metric-grid, .grid-form { grid-template-columns: 1fr; }
+  .seo-status-strip { grid-template-columns: 1fr; }
   .command-center { gap: 16px; }
   .hero-panel, .activity-panel, .panel { padding: 18px; }
   .table-wrap { max-height: 360px; }

@@ -89,7 +89,7 @@ Use:
 
 ```bash
 OPENAI_ENABLED=true
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-5.5
 ```
 
 If key or model access fails, the app falls back to deterministic generation.

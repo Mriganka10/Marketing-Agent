@@ -121,6 +121,55 @@ def test_page_listing_repairs_structured_content(client):
     assert repaired["cta"] == "Request Demo"
 
 
+def test_seo_analytics_sync_sitemap_and_structured_public_page(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Agentic Growth Labs",
+            "website": "https://agenticgrowthlabs.com",
+            "industry": "SEO automation",
+            "audience": "SMB founders and marketing teams",
+            "value_proposition": "We automate search analytics, content refresh, and lead attribution.",
+            "offers": ["SEO automation", "GA4 analytics", "Search Console reporting"],
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "SEO automation demo",
+            "goal": "Generate qualified SEO automation leads.",
+            "target_region": "India",
+        },
+    ).json()["id"]
+
+    run = client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True}).json()
+    page = run["pages"][0]
+
+    public = client.get(f"/p/{page['slug']}")
+    assert public.status_code == 200
+    assert 'rel="canonical"' in public.text
+    assert 'application/ld+json' in public.text
+
+    robots = client.get("/robots.txt")
+    assert robots.status_code == 200
+    assert "Sitemap:" in robots.text
+
+    sitemap = client.get("/sitemap.xml")
+    assert sitemap.status_code == 200
+    assert f"/p/{page['slug']}" in sitemap.text
+
+    sync = client.post("/api/seo/sync")
+    assert sync.status_code == 200
+    assert sync.json()["pages_synced"] >= 1
+
+    overview = client.get("/api/seo/overview").json()
+    assert overview["pages_published"] >= 1
+    assert overview["organic_impressions"] > 0
+    assert overview["page_scores"]
+    assert overview["top_queries"]
+
+
 def test_public_landing_page_uses_business_brand_theme(client):
     business_id = client.post(
         "/api/businesses",

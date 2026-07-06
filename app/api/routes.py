@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 from html import escape
+from urllib.parse import urljoin
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -14,6 +16,7 @@ from app.agents.lead_capture import LeadCaptureAgent
 from app.agents.llm import LLMService
 from app.agents.orchestrator import MarketingOrchestrator
 from app.agents.research import ResearchAgent
+from app.agents.seo_analytics import SeoAnalyticsAgent
 from app.core.config import Settings, get_settings
 from app.core.brand_theme import public_theme_style, theme_for_business, theme_from_dict
 from app.core.content_formatting import coerce_text, normalize_sections
@@ -25,6 +28,7 @@ from app.models.entities import (
     Campaign,
     LandingPage,
     Lead,
+    PageEvent,
     RefreshRecommendation,
 )
 from app.models.schemas import (
@@ -36,9 +40,11 @@ from app.models.schemas import (
     LandingPageRead,
     LeadCreate,
     LeadRead,
+    PageEventCreate,
     RecommendationRead,
     RunRequest,
     RunSummary,
+    SeoOverview,
 )
 
 router = APIRouter()
@@ -75,6 +81,51 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
         "environment": settings.environment,
         "openai_configured": settings.can_use_openai,
     }
+
+
+@router.get("/robots.txt", include_in_schema=False)
+def robots(settings: Settings = Depends(get_settings)) -> Response:
+    base = settings.public_base_url.rstrip("/")
+    body = "\n".join(
+        [
+            "User-agent: *",
+            "Allow: /",
+            "Disallow: /api/",
+            f"Sitemap: {base}/sitemap.xml",
+            "",
+        ]
+    )
+    return Response(content=body, media_type="text/plain")
+
+
+@router.get("/sitemap.xml", include_in_schema=False)
+def sitemap(db: Session = Depends(get_db), settings: Settings = Depends(get_settings)) -> Response:
+    base = settings.public_base_url.rstrip() + "/"
+    pages = db.query(LandingPage).filter(LandingPage.status == "published").all()
+    urls = [
+        (
+            settings.public_base_url.rstrip("/"),
+            "daily",
+            "0.9",
+        )
+    ] + [
+        (
+            urljoin(base, f"p/{page.slug}"),
+            "weekly",
+            "0.8",
+        )
+        for page in pages
+    ]
+    entries = "\n".join(
+        f"<url><loc>{escape(loc)}</loc><changefreq>{freq}</changefreq><priority>{priority}</priority></url>"
+        for loc, freq, priority in urls
+    )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"{entries}</urlset>"
+    )
+    return Response(content=body, media_type="application/xml")
 
 
 @router.post(
@@ -170,6 +221,41 @@ def list_recommendations(db: Session = Depends(get_db)) -> list[RefreshRecommend
     return db.query(RefreshRecommendation).order_by(RefreshRecommendation.created_at.desc()).limit(50).all()
 
 
+@router.post("/api/events")
+def create_page_event(
+    payload: PageEventCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    if payload.page_id and not db.get(LandingPage, payload.page_id):
+        raise HTTPException(status_code=404, detail="Landing page not found.")
+    event = SeoAnalyticsAgent().record_event(
+        db,
+        payload,
+        user_agent=request.headers.get("user-agent"),
+    )
+    return {"id": event.id, "status": "recorded"}
+
+
+@router.get("/api/seo/overview", response_model=SeoOverview)
+def seo_overview(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> SeoOverview:
+    return SeoAnalyticsAgent().overview(db, settings)
+
+
+@router.post(
+    "/api/seo/sync",
+    dependencies=[Depends(require_api_key)],
+)
+def sync_seo_metrics(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, object]:
+    return SeoAnalyticsAgent().sync_metrics(db, settings)
+
+
 @router.get("/api/audit")
 def list_audit(db: Session = Depends(get_db)) -> list[dict[str, object]]:
     events = db.query(AuditEvent).order_by(AuditEvent.created_at.desc()).limit(100).all()
@@ -210,7 +296,12 @@ def dashboard(db: Session = Depends(get_db)) -> DashboardSummary:
 
 
 @router.get("/p/{slug}", response_class=HTMLResponse)
-def public_landing_page(slug: str, request: Request, db: Session = Depends(get_db)) -> str:
+def public_landing_page(
+    slug: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> str:
     page = db.query(LandingPage).filter(LandingPage.slug == slug, LandingPage.status == "published").first()
     if not page:
         raise HTTPException(status_code=404, detail="Landing page not found.")
@@ -229,6 +320,18 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     )
     page.visits += 1
     db.commit()
+    SeoAnalyticsAgent().record_event(
+        db,
+        PageEventCreate(
+            page_id=page.id,
+            campaign_id=page.campaign_id,
+            event_type="page_view",
+            path=str(request.url.path),
+            referrer=request.headers.get("referer"),
+            event_metadata={"source": "server_render"},
+        ),
+        user_agent=request.headers.get("user-agent"),
+    )
     sections = "".join(
         f"<section><h2>{escape(str(section.get('heading', '')))}</h2>"
         f"<p>{escape(str(section.get('body', '')))}</p></section>"
@@ -238,6 +341,53 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
     hero = escape(page.hero)
     cta = escape(page.cta)
     description = escape(str(page.seo.get("description", page.hero)))
+    canonical = escape(urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}"), quote=True)
+    keywords = ", ".join(str(item) for item in page.seo.get("keywords", []))
+    schema = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "name": brand_name,
+                "url": settings.public_base_url,
+            },
+            {
+                "@type": "Service",
+                "name": page.title,
+                "description": str(page.seo.get("description", page.hero)),
+                "provider": {"@type": "Organization", "name": brand_name},
+                "url": canonical,
+                "areaServed": page.campaign.target_region if page.campaign else "Global",
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "Home",
+                        "item": settings.public_base_url,
+                    },
+                    {"@type": "ListItem", "position": 2, "name": page.title, "item": canonical},
+                ],
+            },
+        ],
+    }
+    ga4_script = (
+        f"""
+  <script async src="https://www.googletagmanager.com/gtag/js?id={escape(settings.ga4_measurement_id, quote=True)}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){{dataLayer.push(arguments);}}
+    gtag('js', new Date());
+    gtag('config', '{escape(settings.ga4_measurement_id, quote=True)}', {{
+      page_path: '/p/{escape(page.slug, quote=True)}',
+      page_title: '{title}'
+    }});
+  </script>"""
+        if settings.ga4_measurement_id
+        else ""
+    )
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -245,8 +395,16 @@ def public_landing_page(slug: str, request: Request, db: Session = Depends(get_d
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
   <meta name="description" content="{description}" />
+  <meta name="keywords" content="{escape(keywords, quote=True)}" />
+  <link rel="canonical" href="{canonical}" />
+  <meta property="og:title" content="{title}" />
+  <meta property="og:description" content="{description}" />
+  <meta property="og:url" content="{canonical}" />
+  <meta property="og:type" content="website" />
   <link rel="stylesheet" href="/static/styles.css?v=brand-theme-20260705" />
   <style>{theme_style}</style>
+  <script type="application/ld+json">{json.dumps(schema)}</script>
+  {ga4_script}
 </head>
 <body class="public-page">
   <main class="public-shell">

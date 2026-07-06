@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [] };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null };
 const $ = (selector) => document.querySelector(selector);
 
 async function api(path, options = {}) {
@@ -85,6 +85,21 @@ async function loadDashboard() {
   renderRecommendations(data.recommendations);
 }
 
+async function loadSeoOverview() {
+  state.seo = await api("/api/seo/overview");
+  $("#seo-mode").textContent = state.seo.integration_status.mode.replaceAll("_", " ");
+  $("#seo-indexed").textContent = state.seo.indexed_pages;
+  $("#seo-impressions").textContent = state.seo.organic_impressions.toLocaleString();
+  $("#seo-clicks").textContent = state.seo.organic_clicks.toLocaleString();
+  $("#seo-ctr").textContent = `${state.seo.ctr}%`;
+  $("#seo-position").textContent = Number(state.seo.average_position).toFixed(1);
+  $("#seo-sessions").textContent = state.seo.sessions.toLocaleString();
+  $("#seo-leads").textContent = state.seo.leads.toLocaleString();
+  $("#seo-refresh-count").textContent = `${state.seo.pages_needing_refresh} need refresh`;
+  renderSeoPages(state.seo.page_scores);
+  renderSeoQueries(state.seo.top_queries);
+}
+
 async function loadPages() {
   state.pages = await api("/api/pages");
   const list = $("#pages-list");
@@ -110,6 +125,35 @@ function renderRecommendations(items) {
       </div>
     </article>
   `).join("") : `<p class="empty">Recommendations appear after a campaign run.</p>`;
+}
+
+function scoreClass(score) {
+  if (score >= 80) return "good";
+  if (score >= 65) return "medium";
+  return "high";
+}
+
+function renderSeoPages(items) {
+  $("#seo-pages-list").innerHTML = items.length ? items.map((page) => `
+    <article class="row-card seo-score-card">
+      <div>
+        <span class="severity ${scoreClass(page.overall_score)}">Score ${Number(page.overall_score).toFixed(0)}</span>
+        <h3>${escapeHtml(page.title)}</h3>
+        <p>${escapeHtml(page.diagnosis)}</p>
+        <span>${page.impressions.toLocaleString()} impressions · ${page.clicks.toLocaleString()} clicks · ${page.conversion_rate}% conversion</span>
+      </div>
+      <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open</a>
+    </article>
+  `).join("") : `<p class="empty">Run a campaign and sync SEO metrics to populate page scores.</p>`;
+}
+
+function renderSeoQueries(items) {
+  $("#seo-queries-list").innerHTML = items.length ? items.map((item) => `
+    <article class="query-card">
+      <strong>${escapeHtml(item.query)}</strong>
+      <span>${Number(item.impressions).toLocaleString()} impressions · ${Number(item.clicks).toLocaleString()} clicks · avg. ${Number(item.average_position).toFixed(1)}</span>
+    </article>
+  `).join("") : `<p class="empty">Search queries appear after SEO metric sync.</p>`;
 }
 
 async function loadLeads() {
@@ -149,7 +193,7 @@ function renderAuditTable(items) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit()]);
+  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview()]);
 }
 
 $("#business-form").addEventListener("submit", async (event) => {
@@ -194,12 +238,20 @@ $("#campaign-form").addEventListener("submit", async (event) => {
         publish_pages: form.get("publish_pages") === "on",
       }),
     });
+    await api("/api/seo/sync", { method: "POST", body: JSON.stringify({}) });
     await refreshAll();
   });
   toast("Agent loop completed");
 });
 
 $("#refresh-pages").addEventListener("click", refreshAll);
+$("#sync-seo").addEventListener("click", async () => {
+  await withProcessing("Syncing SEO analytics", "The SEO Analytics Agent is collecting page, query, engagement, and conversion metrics.", async () => {
+    await api("/api/seo/sync", { method: "POST", body: JSON.stringify({}) });
+    await refreshAll();
+  });
+  toast("SEO metrics synced");
+});
 $("#refresh-businesses").addEventListener("click", async () => {
   await withProcessing("Refreshing businesses", "Loading the latest saved business profiles into the campaign dropdown.", loadBusinesses);
   toast("Business list refreshed");

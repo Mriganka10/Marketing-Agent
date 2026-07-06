@@ -212,7 +212,10 @@ def ensure_app_and_version() -> None:
 def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dict[str, str]]:
     db_url = get_secure(f"{SSM_PATH}/database-url")
     openai_key = get_secure(f"{SSM_PATH}/openai-api-key")
-    openai_model = get_secure(f"{SSM_PATH}/openai-model")
+    try:
+        openai_model = get_secure(f"{SSM_PATH}/openai-model")
+    except Exception:
+        openai_model = "gpt-5.5"
     secret_key = get_secure(f"{SSM_PATH}/secret-key")
     app_s3_bucket = get_secure(f"{SSM_PATH}/s3-bucket")
     env = {
@@ -224,7 +227,9 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
         "DATA_DIR": "/app/data",
         "OPENAI_ENABLED": "true",
         "OPENAI_API_KEY": openai_key,
-        "OPENAI_MODEL": openai_model,
+        "OPENAI_MODEL": openai_model or "gpt-5.5",
+        "OPENAI_REASONING_EFFORT": "medium",
+        "OPENAI_EMBEDDING_MODEL": "text-embedding-3-large",
         "PUBLIC_BASE_URL": PUBLIC_BASE_URL,
         "ALLOWED_ORIGINS": '["*"]',
         "S3_BUCKET": app_s3_bucket,

@@ -16,11 +16,17 @@ class Settings(BaseSettings):
     data_dir: Path = Path("./data")
 
     openai_api_key: str | None = None
-    openai_model: str = "gpt-4.1-mini"
+    openai_model: str = "gpt-5.5"
+    openai_reasoning_effort: str = "medium"
+    openai_embedding_model: str = "text-embedding-3-large"
     openai_enabled: bool = True
 
     allowed_origins: list[str] = ["*"]
     public_base_url: str = "http://localhost:8000"
+    ga4_measurement_id: str | None = None
+    ga4_property_id: str | None = None
+    google_search_console_site_url: str | None = None
+    google_service_account_json: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -35,7 +41,7 @@ class Settings(BaseSettings):
     @classmethod
     def default_blank_openai_model(cls, value: str | None) -> str:
         if not value:
-            return "gpt-4.1-mini"
+            return "gpt-5.5"
         return value
 
     @property
