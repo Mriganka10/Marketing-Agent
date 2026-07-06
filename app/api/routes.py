@@ -401,7 +401,7 @@ def public_landing_page(
   <meta property="og:description" content="{description}" />
   <meta property="og:url" content="{canonical}" />
   <meta property="og:type" content="website" />
-  <link rel="stylesheet" href="/static/styles.css?v=brand-theme-20260705" />
+  <link rel="stylesheet" href="/static/styles.css?v=brand-theme-20260706-1" />
   <style>{theme_style}</style>
   <script type="application/ld+json">{json.dumps(schema)}</script>
   {ga4_script}
@@ -429,7 +429,7 @@ def public_landing_page(
     </section>
     <div class="public-sections">{sections}</div>
   </main>
-  <script src="/static/public.js"></script>
+  <script src="/static/public.js?v=brand-theme-20260706-1"></script>
 </body>
 </html>"""
 
