@@ -202,7 +202,7 @@ def test_public_landing_page_uses_business_brand_theme(client):
                 hero="Build your growth strategy and execution engine.",
                 sections=[],
                 cta="Start a conversation",
-                seo={},
+                seo={"keywords": "growth consulting, revenue operations"},
                 status="published",
             )
         )
@@ -215,6 +215,10 @@ def test_public_landing_page_uses_business_brand_theme(client):
     assert "--public-text: #101f43" in public_response.text
     assert 'src="https://greyradius.com/assets/images/logo.png"' in public_response.text
     assert 'alt="Greyradius logo"' in public_response.text
+
+    client.post("/api/seo/sync")
+    overview = client.get("/api/seo/overview").json()
+    assert any(item["query"] == "growth consulting" for item in overview["top_queries"])
 
 
 def test_public_landing_page_uses_kairoz_teal_theme(client):

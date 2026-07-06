@@ -263,7 +263,13 @@ class SeoAnalyticsAgent:
         starts = max(page.conversions, int(cta * 0.75))
         submits = max(page.conversions, int(starts * 0.42))
         position = round(4 + (seed % 260) / 10, 2)
-        query = str(page.seo.get("keywords", [page.title])[0]) if page.seo else page.title
+        keywords = page.seo.get("keywords") if page.seo else None
+        if isinstance(keywords, list) and keywords:
+            query = str(keywords[0])
+        elif isinstance(keywords, str) and keywords.strip():
+            query = keywords.split(",")[0].strip()
+        else:
+            query = page.title
         return PageMetricBundle(
             impressions=impressions,
             clicks=clicks,
