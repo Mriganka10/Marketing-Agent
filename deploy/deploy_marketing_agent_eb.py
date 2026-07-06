@@ -15,6 +15,7 @@ ACCOUNT_ID = boto3.client("sts", region_name=REGION).get_caller_identity()["Acco
 APP_NAME = "marketing-agent-eb-app"
 ENV_NAME = "marketing-agent-eb-prod"
 CNAME_PREFIX = "marketing-agent-prod"
+PUBLIC_BASE_URL = "https://agenticgrowthlabs.com"
 VERSION_LABEL = f"release-{int(time.time())}"
 EB_BUCKET = f"marketing-agent-eb-source-{ACCOUNT_ID}-{REGION}"
 EB_EC2_SG_NAME = "marketing-agent-eb-prod-ec2-sg"
@@ -224,7 +225,7 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
         "OPENAI_ENABLED": "true",
         "OPENAI_API_KEY": openai_key,
         "OPENAI_MODEL": openai_model,
-        "PUBLIC_BASE_URL": f"http://{CNAME_PREFIX}.{REGION}.elasticbeanstalk.com",
+        "PUBLIC_BASE_URL": PUBLIC_BASE_URL,
         "ALLOWED_ORIGINS": '["*"]',
         "S3_BUCKET": app_s3_bucket,
         "AWS_REGION": REGION,

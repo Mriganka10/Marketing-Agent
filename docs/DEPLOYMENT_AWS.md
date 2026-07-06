@@ -22,9 +22,21 @@ Current production Elastic Beanstalk deployment:
 Application: marketing-agent-eb-app
 Environment: marketing-agent-eb-prod
 Region: ap-south-1
-URL: http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
+Elastic Beanstalk URL: http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
+Production URL: https://agenticgrowthlabs.com
+Alternate URLs: https://www.agenticgrowthlabs.com, https://app.agenticgrowthlabs.com
 Database: marketing-agent-prod-postgres
 S3 bucket: marketing-agent-prod-453732174568-ap-south-1
+```
+
+Current HTTPS routing:
+
+```text
+Route 53 hosted zone: agenticgrowthlabs.com / Z087564836Z3AAI4ODFFL
+ACM certificate region: us-east-1
+CloudFront distribution: EMF08K2YPZEP
+CloudFront domain: d31dps223ry9uk.cloudfront.net
+PUBLIC_BASE_URL: https://agenticgrowthlabs.com
 ```
 
 Production PostgreSQL connection details and SQL inspection queries are documented in:
@@ -40,7 +52,7 @@ Use S3 later for uploaded brand assets, generated images, exports, and audit arc
 
 ## Production Checklist
 
-- Use HTTPS at the load balancer.
+- Keep HTTPS enabled through CloudFront and ACM.
 - Set `API_KEY` and send it as `x-api-key` for admin write APIs.
 - Restrict `ALLOWED_ORIGINS` to your dashboard domain.
 - Move from SQLite to RDS Postgres before multi-instance scaling.
