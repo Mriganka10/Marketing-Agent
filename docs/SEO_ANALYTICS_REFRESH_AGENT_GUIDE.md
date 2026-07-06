@@ -196,6 +196,12 @@ The business outcome is:
 More qualified search traffic and more qualified leads from targeted landing pages.
 ```
 
+For a client-friendly explanation of what the agent can and cannot guarantee for Google traffic, indexing, automatic refreshes, and metric definitions, see:
+
+```text
+docs/SEO_TRAFFIC_INDEXING_AND_METRICS.md
+```
+
 ## Current Capabilities
 
 The current system can:

@@ -113,6 +113,7 @@ Recommended production deployment:
 - `docs/`: Owner and deployment documentation.
 - `docs/LEAD_SCORING_AND_CONVERSION.md`: Dashboard lead score and conversion explanation.
 - `docs/SEO_ANALYTICS_REFRESH_AGENT_GUIDE.md`: Client-facing SEO and Analytics/Refresh Agent explanation.
+- `docs/SEO_TRAFFIC_INDEXING_AND_METRICS.md`: Explains what the agent can do for traffic/indexing, what Google controls, and the meaning of traffic, visits, leads, CTR, impressions, and ranking.
 - `docs/GOOGLE_SEO_ANALYTICS_SETUP.md`: GA4 and Search Console setup performed for production.
 - `docs/PRODUCTION_FUNCTIONAL_FLOW.md`: Current feature flow and production checks.
 - `docs/END_TO_END_TEST_CASES.md`: Manual test cases from business save through Google search and metrics review.
