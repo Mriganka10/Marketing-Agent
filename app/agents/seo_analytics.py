@@ -329,8 +329,14 @@ class SeoAnalyticsAgent:
         )
 
     def score_page(self, db: Session, page: LandingPage, settings: Settings) -> SeoPageScore:
-        search = db.query(SeoSearchMetric).filter(SeoSearchMetric.page_id == page.id).all()
-        analytics = db.query(AnalyticsPageMetric).filter(AnalyticsPageMetric.page_id == page.id).all()
+        live_google = self._live_google_synced(db)
+        search_query = db.query(SeoSearchMetric).filter(SeoSearchMetric.page_id == page.id)
+        analytics_query = db.query(AnalyticsPageMetric).filter(AnalyticsPageMetric.page_id == page.id)
+        if live_google:
+            search_query = search_query.filter(SeoSearchMetric.source == "google_search_console")
+            analytics_query = analytics_query.filter(AnalyticsPageMetric.source == "ga4")
+        search = search_query.all()
+        analytics = analytics_query.all()
         leads = db.query(func.count(Lead.id)).filter(Lead.page_id == page.id).scalar() or 0
         impressions = sum(item.impressions for item in search)
         clicks = sum(item.clicks for item in search)
@@ -554,15 +560,29 @@ class SeoAnalyticsAgent:
     def _canonical_url(self, settings: Settings, page: LandingPage) -> str:
         return urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}").rstrip("/")
 
-    def _top_queries(self, db: Session) -> list[dict[str, object]]:
-        rows = (
-            db.query(
-                SeoSearchMetric.query,
-                func.sum(SeoSearchMetric.impressions),
-                func.sum(SeoSearchMetric.clicks),
-                func.avg(SeoSearchMetric.average_position),
+    def _live_google_synced(self, db: Session) -> bool:
+        statuses = {
+            item.provider: item.status
+            for item in db.query(SeoIntegrationConnection).filter(
+                SeoIntegrationConnection.provider.in_(["google_search_console", "ga4"])
             )
-            .group_by(SeoSearchMetric.query)
+        }
+        return (
+            statuses.get("google_search_console") == "live_synced"
+            and statuses.get("ga4") == "live_synced"
+        )
+
+    def _top_queries(self, db: Session) -> list[dict[str, object]]:
+        query = db.query(
+            SeoSearchMetric.query,
+            func.sum(SeoSearchMetric.impressions),
+            func.sum(SeoSearchMetric.clicks),
+            func.avg(SeoSearchMetric.average_position),
+        )
+        if self._live_google_synced(db):
+            query = query.filter(SeoSearchMetric.source == "google_search_console")
+        rows = (
+            query.group_by(SeoSearchMetric.query)
             .order_by(func.sum(SeoSearchMetric.clicks).desc())
             .limit(8)
             .all()

@@ -243,6 +243,8 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     overview = client.get("/api/seo/overview").json()
     assert overview["integration_status"]["mode"] == "live_google_integrated"
     assert any(item["query"] == "automated seo agents" for item in overview["top_queries"])
+    assert overview["organic_impressions"] == 240
+    assert overview["sessions"] == 33
 
 
 def test_seo_sync_preserves_google_error_status(client, monkeypatch):
