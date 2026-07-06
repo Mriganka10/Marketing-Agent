@@ -14,16 +14,16 @@ This app can run in two modes:
 3. Create a JSON key for that service account.
 4. Add the service account email to Google Search Console for `https://agenticgrowthlabs.com/` or the domain property `sc-domain:agenticgrowthlabs.com`.
 5. Add the service account email to GA4 with Viewer access.
-6. Confirm the GA4 property ID. The URL supplied during setup appears to contain property id `153293282`.
-7. Confirm the GA4 Web Measurement ID, which should look like `G-XXXXXXXXXX`.
+6. Confirm the GA4 property ID. The production property currently uses `544328945`.
+7. Confirm the GA4 Web Measurement ID. The production web stream currently uses `G-KZ3N4G2S20`.
 
 ## AWS SSM Parameters
 
 Store these values in AWS Systems Manager Parameter Store under `/marketing-agent/prod`:
 
 ```bash
-aws ssm put-parameter --name /marketing-agent/prod/ga4-property-id --type SecureString --value "153293282" --overwrite --region ap-south-1
-aws ssm put-parameter --name /marketing-agent/prod/ga4-measurement-id --type SecureString --value "G-XXXXXXXXXX" --overwrite --region ap-south-1
+aws ssm put-parameter --name /marketing-agent/prod/ga4-property-id --type SecureString --value "544328945" --overwrite --region ap-south-1
+aws ssm put-parameter --name /marketing-agent/prod/ga4-measurement-id --type SecureString --value "G-KZ3N4G2S20" --overwrite --region ap-south-1
 aws ssm put-parameter --name /marketing-agent/prod/google-search-console-site-url --type SecureString --value "https://agenticgrowthlabs.com/" --overwrite --region ap-south-1
 aws ssm put-parameter --name /marketing-agent/prod/google-service-account-json --type SecureString --value '<service-account-json>' --overwrite --region ap-south-1
 ```

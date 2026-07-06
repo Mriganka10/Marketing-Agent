@@ -100,12 +100,26 @@ nav a:hover {
   transform: translateX(2px);
 }
 
+nav a.active {
+  background: #ffffff;
+  color: #0c151a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
 main {
   padding: 24px 34px 42px;
   display: grid;
   gap: 20px;
   max-width: 1760px;
   width: 100%;
+}
+
+.route-view {
+  display: none;
+}
+
+.route-view.active {
+  display: grid;
 }
 
 .topbar {
@@ -275,6 +289,56 @@ p { color: var(--muted); line-height: 1.6; }
 .activity-panel {
   padding: 20px;
   min-height: 420px;
+}
+
+.agent-pathway {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+.agent-rail {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-rail a {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfd;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.agent-rail a:hover {
+  border-color: rgba(15, 118, 110, 0.45);
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+.agent-rail strong {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #e5f1f0;
+  color: var(--accent);
+}
+
+.agent-rail span {
+  color: var(--accent-3);
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 .activity-head {
@@ -485,6 +549,10 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 18px;
 }
 
+.seo-page-performance .list {
+  max-height: none;
+}
+
 .mini-head {
   display: flex;
   align-items: center;
@@ -495,6 +563,83 @@ tbody tr:last-child td { border-bottom: 0; }
 
 .seo-score-card {
   align-items: flex-start;
+}
+
+.seo-report-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+}
+
+.seo-report-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.seo-report-head h3 {
+  margin-top: 10px;
+  font-size: 1.06rem;
+}
+
+.seo-report-head p {
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+.seo-report-head a:not(.button-link) {
+  color: var(--accent);
+}
+
+.seo-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.seo-report-metrics span {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px solid #e3eaee;
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.seo-report-metrics small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.seo-report-metrics strong {
+  color: var(--ink);
+  font-size: 1.08rem;
+}
+
+.seo-report-action {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f3f7f6;
+  border-left: 4px solid var(--accent);
+}
+
+.seo-report-action span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.seo-report-action strong {
+  color: var(--ink);
+  line-height: 1.45;
 }
 
 .query-card {
@@ -917,6 +1062,7 @@ button.ghost {
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .workspace, .two-column, .public-hero, .public-sections, .seo-grid { grid-template-columns: 1fr; }
   .seo-status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .seo-report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-panel { grid-template-columns: 1fr; }
   .hero-visual { justify-items: start; }
   .hero-visual div { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -963,6 +1109,8 @@ button.ghost {
   .topbar, .row-card { align-items: stretch; flex-direction: column; }
   .metric-grid, .grid-form { grid-template-columns: 1fr; }
   .seo-status-strip { grid-template-columns: 1fr; }
+  .seo-report-head { display: grid; }
+  .seo-report-metrics { grid-template-columns: 1fr; }
   .command-center { gap: 16px; }
   .hero-panel, .activity-panel, .panel { padding: 18px; }
   .table-wrap { max-height: 360px; }

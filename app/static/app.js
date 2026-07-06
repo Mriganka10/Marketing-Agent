@@ -1,5 +1,6 @@
 const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null };
 const $ = (selector) => document.querySelector(selector);
+const routes = new Set(["overview", "launch", "seo", "pages", "activity"]);
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -57,6 +58,25 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit",
   }) : "-";
+}
+
+function formatPath(url) {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url;
+  }
+}
+
+function setRoute() {
+  const route = routes.has(location.hash.slice(1)) ? location.hash.slice(1) : "overview";
+  document.querySelectorAll(".route-view").forEach((section) => {
+    section.classList.toggle("active", section.id === route);
+  });
+  document.querySelectorAll("nav a").forEach((link) => {
+    link.classList.toggle("active", link.dataset.route === route);
+  });
+  $(".breadcrumb").textContent = `Marketing Agent / ${route.replaceAll("-", " ")}`;
 }
 
 async function loadHealth() {
@@ -136,14 +156,28 @@ function scoreClass(score) {
 
 function renderSeoPages(items) {
   $("#seo-pages-list").innerHTML = items.length ? items.map((page) => `
-    <article class="row-card seo-score-card">
-      <div>
-        <span class="severity ${scoreClass(page.overall_score)}">Score ${Number(page.overall_score).toFixed(0)}</span>
-        <h3>${escapeHtml(page.title)}</h3>
-        <p>${escapeHtml(page.diagnosis)}</p>
-        <span>${page.impressions.toLocaleString()} impressions · ${page.clicks.toLocaleString()} clicks · ${page.conversion_rate}% conversion</span>
+    <article class="seo-report-card">
+      <div class="seo-report-head">
+        <div>
+          <span class="severity ${scoreClass(page.overall_score)}">SEO score ${Number(page.overall_score).toFixed(0)}</span>
+          <h3>${escapeHtml(page.title)}</h3>
+          <p>Page: <a href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">${escapeHtml(formatPath(page.url))}</a></p>
+        </div>
+        <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open page</a>
       </div>
-      <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open</a>
+      <div class="seo-report-metrics">
+        <span><small>Google impressions</small><strong>${page.impressions.toLocaleString()}</strong></span>
+        <span><small>Google clicks</small><strong>${page.clicks.toLocaleString()}</strong></span>
+        <span><small>CTR</small><strong>${Number(page.ctr).toFixed(2)}%</strong></span>
+        <span><small>Average position</small><strong>${Number(page.average_position).toFixed(1)}</strong></span>
+        <span><small>GA4 sessions</small><strong>${page.sessions.toLocaleString()}</strong></span>
+        <span><small>Leads</small><strong>${page.leads.toLocaleString()}</strong></span>
+        <span><small>Conversion rate</small><strong>${Number(page.conversion_rate).toFixed(1)}%</strong></span>
+      </div>
+      <div class="seo-report-action">
+        <span>${escapeHtml(page.diagnosis)}</span>
+        <strong>Recommendation: ${escapeHtml(page.next_action)}</strong>
+      </div>
     </article>
   `).join("") : `<p class="empty">Run a campaign and sync SEO metrics to populate page scores.</p>`;
 }
@@ -287,3 +321,5 @@ document.querySelectorAll(".tab-button").forEach((button) => {
 
 loadHealth().catch((error) => toast(error.message));
 refreshAll().catch((error) => toast(error.message));
+window.addEventListener("hashchange", setRoute);
+setRoute();

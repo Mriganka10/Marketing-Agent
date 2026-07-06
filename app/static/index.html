@@ -4,24 +4,24 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=release-google-seo-20260706-2" />
+  <link rel="stylesheet" href="/static/styles.css?v=release-client-ui-20260706-3" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=release-google-seo-20260706-2" alt="Marketing Agent logo" />
+        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="Marketing Agent logo" />
         <div>
           <strong>Marketing Agent</strong>
           <small>Autonomous demand engine</small>
         </div>
       </div>
       <nav>
-        <a href="#overview">Overview</a>
-        <a href="#launch">Launch</a>
-        <a href="#seo">SEO Analytics</a>
-        <a href="#pages">Pages</a>
-        <a href="#activity">Activity</a>
+        <a href="#overview" data-route="overview">Overview</a>
+        <a href="#launch" data-route="launch">Launch</a>
+        <a href="#seo" data-route="seo">SEO Analytics</a>
+        <a href="#pages" data-route="pages">Pages</a>
+        <a href="#activity" data-route="activity">Activity</a>
       </nav>
     </aside>
 
@@ -31,15 +31,15 @@
         <div class="status-pill" id="health">Checking service</div>
       </header>
 
-      <section id="overview" class="command-center">
+      <section id="overview" class="route-view command-center">
         <div class="hero-panel">
           <div class="hero-copy">
             <p class="eyebrow">Marketing operations console</p>
-            <h1>AI demand generation workspace</h1>
-            <p class="header-copy">Coordinate business memory, research, page creation, lead capture, and refresh recommendations from one polished operating dashboard.</p>
+            <h1>Agentic growth operations</h1>
+            <p class="header-copy">Run the full SEO growth loop from business memory to demand research, landing pages, lead capture, Google analytics, and refresh decisions.</p>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <img src="/static/marketing-agent-logo.svg?v=release-google-seo-20260706-2" alt="" />
+            <img src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
             <div>
               <span>Memory</span>
               <span>Research</span>
@@ -58,56 +58,24 @@
           </div>
         </div>
 
-        <aside id="activity" class="activity-panel">
-          <div class="activity-head">
+        <aside class="agent-pathway">
+          <div class="panel-head">
             <div>
-              <p class="eyebrow">Lead capture + governance</p>
-              <h2>Activity control room</h2>
-            </div>
-            <div class="tab-switcher" role="tablist" aria-label="Activity views">
-              <button class="tab-button active" type="button" data-tab="leads">Leads <span id="recent-lead-count">0</span></button>
-              <button class="tab-button" type="button" data-tab="audit">Governance <span id="audit-count">0</span></button>
+              <p class="eyebrow">Agent workflow</p>
+              <h2>What the system automates</h2>
             </div>
           </div>
-
-          <div class="tab-panel active" id="leads-panel">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Lead</th>
-                    <th>Company</th>
-                    <th>Status</th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody id="leads-table-body">
-                  <tr><td colspan="4">Captured leads will appear here.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="tab-panel" id="audit-panel">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Agent</th>
-                    <th>Event</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody id="audit-table-body">
-                  <tr><td colspan="3">Audit events will appear here.</td></tr>
-                </tbody>
-              </table>
-            </div>
+          <div class="agent-rail">
+            <a href="#launch"><strong>01</strong><span>Save business memory and positioning</span></a>
+            <a href="#launch"><strong>02</strong><span>Research high-intent SEO demand</span></a>
+            <a href="#pages"><strong>03</strong><span>Create and publish landing pages</span></a>
+            <a href="#activity"><strong>04</strong><span>Capture and score leads</span></a>
+            <a href="#seo"><strong>05</strong><span>Read GA4/GSC stats and refresh pages</span></a>
           </div>
         </aside>
       </section>
 
-      <section id="seo" class="panel seo-command">
+      <section id="seo" class="route-view panel seo-command">
         <div class="panel-head">
           <div>
             <p class="eyebrow">SEO Analytics Agent + Refresh Agent</p>
@@ -130,9 +98,9 @@
           <article><span>SEO leads</span><strong id="seo-leads">0</strong></article>
         </div>
         <div class="seo-grid">
-          <div>
+          <div class="seo-page-performance">
             <div class="mini-head">
-              <h3>Page health scores</h3>
+              <h3>Page performance and refresh plan</h3>
               <span id="seo-refresh-count">0 need refresh</span>
             </div>
             <div id="seo-pages-list" class="list"></div>
@@ -147,14 +115,14 @@
         </div>
       </section>
 
-      <section id="launch" class="workspace">
+      <section id="launch" class="route-view workspace">
         <div class="panel">
           <div class="panel-head">
             <div>
               <p class="eyebrow">Business Memory Agent</p>
               <h2>Business profile</h2>
             </div>
-            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=release-google-seo-20260706-2" alt="" />
+            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
           </div>
           <form id="business-form" class="grid-form">
             <label>Business name<input name="name" required value="Northstar Growth Labs" /></label>
@@ -191,8 +159,8 @@
         </div>
       </section>
 
-      <section class="two-column operations-grid">
-        <div id="pages" class="panel">
+      <section id="pages" class="route-view two-column operations-grid">
+        <div class="panel">
           <div class="panel-head">
             <div>
               <p class="eyebrow">Content/Page Creation Agent</p>
@@ -214,6 +182,54 @@
         </div>
       </section>
 
+      <section id="activity" class="route-view activity-panel">
+        <div class="activity-head">
+          <div>
+            <p class="eyebrow">Lead capture + governance</p>
+            <h2>Activity control room</h2>
+          </div>
+          <div class="tab-switcher" role="tablist" aria-label="Activity views">
+            <button class="tab-button active" type="button" data-tab="leads">Leads <span id="recent-lead-count">0</span></button>
+            <button class="tab-button" type="button" data-tab="audit">Governance <span id="audit-count">0</span></button>
+          </div>
+        </div>
+
+        <div class="tab-panel active" id="leads-panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Company</th>
+                  <th>Status</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body">
+                <tr><td colspan="4">Captured leads will appear here.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="audit-panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Agent</th>
+                  <th>Event</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <tr><td colspan="3">Audit events will appear here.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -223,7 +239,7 @@
       <div class="agent-loader" aria-hidden="true">
         <span class="signal signal-a"></span>
         <span class="signal signal-b"></span>
-        <img src="/static/marketing-agent-logo.svg?v=release-google-seo-20260706-2" alt="" />
+        <img src="/static/marketing-agent-logo.svg?v=release-client-ui-20260706-3" alt="" />
         <span class="signal signal-c"></span>
       </div>
       <strong id="processing-title">Processing</strong>
@@ -236,6 +252,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=release-google-seo-20260706-2"></script>
+  <script src="/static/app.js?v=release-client-ui-20260706-3"></script>
 </body>
 </html>
