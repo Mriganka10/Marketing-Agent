@@ -340,7 +340,9 @@ class SeoAnalyticsAgent:
         leads = db.query(func.count(Lead.id)).filter(Lead.page_id == page.id).scalar() or 0
         impressions = sum(item.impressions for item in search)
         clicks = sum(item.clicks for item in search)
-        sessions = sum(item.sessions for item in analytics) or page.visits
+        sessions = sum(item.sessions for item in analytics)
+        if not live_google and not sessions:
+            sessions = page.visits
         engaged_sessions = sum(item.engaged_sessions for item in analytics)
         ctr = (clicks / impressions) * 100 if impressions else 0
         average_position = mean([item.average_position for item in search]) if search else 0
