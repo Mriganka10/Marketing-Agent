@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-import secrets
 import time
 import zipfile
 from pathlib import Path
@@ -218,25 +216,63 @@ def ensure_app_and_version() -> None:
             raise
 
 
-def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dict[str, str]]:
+def existing_environment_values(eb) -> dict[str, str]:
+    try:
+        settings = eb.describe_configuration_settings(
+            ApplicationName=APP_NAME,
+            EnvironmentName=ENV_NAME,
+        ).get("ConfigurationSettings", [])
+    except ClientError:
+        return {}
+    if not settings:
+        return {}
+    return {
+        option["OptionName"]: option.get("Value", "")
+        for option in settings[0].get("OptionSettings", [])
+        if option.get("Namespace") == "aws:elasticbeanstalk:application:environment"
+    }
+
+
+def optional_env(
+    existing: dict[str, str],
+    parameter_name: str,
+    env_name: str,
+    default: str = "",
+) -> str:
+    value = get_optional_secure(parameter_name)
+    if value:
+        return value
+    existing_value = existing.get(env_name)
+    if existing_value:
+        return existing_value
+    return default
+
+
+def option_settings(
+    vpc_id: str,
+    subnet_ids: list[str],
+    ec2_sg: str,
+    existing: dict[str, str] | None = None,
+) -> list[dict[str, str]]:
+    existing = existing or {}
     db_url = get_secure(f"{SSM_PATH}/database-url")
     openai_key = get_secure(f"{SSM_PATH}/openai-api-key")
-    openai_model = get_optional_secure(f"{SSM_PATH}/openai-model", "gpt-5.5")
-    ga4_measurement_id = get_optional_secure(f"{SSM_PATH}/ga4-measurement-id")
-    ga4_property_id = get_optional_secure(f"{SSM_PATH}/ga4-property-id")
-    search_console_site_url = get_optional_secure(f"{SSM_PATH}/google-search-console-site-url")
-    google_service_account_json = get_optional_secure(f"{SSM_PATH}/google-service-account-json")
-    dataforseo_enabled = get_optional_secure(f"{SSM_PATH}/dataforseo-enabled", "false")
-    dataforseo_login = get_optional_secure(f"{SSM_PATH}/dataforseo-login")
-    dataforseo_password = get_optional_secure(f"{SSM_PATH}/dataforseo-password")
-    google_ads_enabled = get_optional_secure(f"{SSM_PATH}/google-ads-enabled", "false")
-    google_ads_developer_token = get_optional_secure(f"{SSM_PATH}/google-ads-developer-token")
-    google_ads_client_id = get_optional_secure(f"{SSM_PATH}/google-ads-client-id")
-    google_ads_client_secret = get_optional_secure(f"{SSM_PATH}/google-ads-client-secret")
-    google_ads_refresh_token = get_optional_secure(f"{SSM_PATH}/google-ads-refresh-token")
-    google_ads_login_customer_id = get_optional_secure(f"{SSM_PATH}/google-ads-login-customer-id")
-    google_ads_customer_id = get_optional_secure(f"{SSM_PATH}/google-ads-customer-id")
-    google_ads_api_version = get_optional_secure(f"{SSM_PATH}/google-ads-api-version", "v23")
+    openai_model = optional_env(existing, f"{SSM_PATH}/openai-model", "OPENAI_MODEL", "gpt-5.5")
+    ga4_measurement_id = optional_env(existing, f"{SSM_PATH}/ga4-measurement-id", "GA4_MEASUREMENT_ID")
+    ga4_property_id = optional_env(existing, f"{SSM_PATH}/ga4-property-id", "GA4_PROPERTY_ID")
+    search_console_site_url = optional_env(existing, f"{SSM_PATH}/google-search-console-site-url", "GOOGLE_SEARCH_CONSOLE_SITE_URL")
+    google_service_account_json = optional_env(existing, f"{SSM_PATH}/google-service-account-json", "GOOGLE_SERVICE_ACCOUNT_JSON")
+    dataforseo_enabled = optional_env(existing, f"{SSM_PATH}/dataforseo-enabled", "DATAFORSEO_ENABLED", "false")
+    dataforseo_login = optional_env(existing, f"{SSM_PATH}/dataforseo-login", "DATAFORSEO_LOGIN")
+    dataforseo_password = optional_env(existing, f"{SSM_PATH}/dataforseo-password", "DATAFORSEO_PASSWORD")
+    google_ads_enabled = optional_env(existing, f"{SSM_PATH}/google-ads-enabled", "GOOGLE_ADS_ENABLED", "false")
+    google_ads_developer_token = optional_env(existing, f"{SSM_PATH}/google-ads-developer-token", "GOOGLE_ADS_DEVELOPER_TOKEN")
+    google_ads_client_id = optional_env(existing, f"{SSM_PATH}/google-ads-client-id", "GOOGLE_ADS_CLIENT_ID")
+    google_ads_client_secret = optional_env(existing, f"{SSM_PATH}/google-ads-client-secret", "GOOGLE_ADS_CLIENT_SECRET")
+    google_ads_refresh_token = optional_env(existing, f"{SSM_PATH}/google-ads-refresh-token", "GOOGLE_ADS_REFRESH_TOKEN")
+    google_ads_login_customer_id = optional_env(existing, f"{SSM_PATH}/google-ads-login-customer-id", "GOOGLE_ADS_LOGIN_CUSTOMER_ID")
+    google_ads_customer_id = optional_env(existing, f"{SSM_PATH}/google-ads-customer-id", "GOOGLE_ADS_CUSTOMER_ID")
+    google_ads_api_version = optional_env(existing, f"{SSM_PATH}/google-ads-api-version", "GOOGLE_ADS_API_VERSION", "v23")
     secret_key = get_secure(f"{SSM_PATH}/secret-key")
     app_s3_bucket = get_secure(f"{SSM_PATH}/s3-bucket")
     env = {
@@ -291,7 +327,8 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
 def deploy_environment(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> dict:
     eb = client("elasticbeanstalk")
     envs = eb.describe_environments(ApplicationName=APP_NAME, EnvironmentNames=[ENV_NAME], IncludeDeleted=False).get("Environments", [])
-    opts = option_settings(vpc_id, subnet_ids, ec2_sg)
+    existing = existing_environment_values(eb) if envs else {}
+    opts = option_settings(vpc_id, subnet_ids, ec2_sg, existing)
     if envs:
         eb.update_environment(EnvironmentName=ENV_NAME, VersionLabel=VERSION_LABEL, OptionSettings=opts)
     else:

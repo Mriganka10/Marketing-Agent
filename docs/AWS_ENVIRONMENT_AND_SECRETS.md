@@ -145,6 +145,12 @@ Expected SSM parameters include:
 /marketing-agent/prod/google-ads-api-version
 ```
 
+Recommended owner practice:
+
+- store long-lived production secrets in SSM SecureString parameters;
+- direct Elastic Beanstalk environment values can work, but SSM is safer and survives scripted deployments more predictably;
+- the deployment script preserves an existing Elastic Beanstalk value when an optional SSM parameter is missing, then falls back to the documented default.
+
 ## Verification Commands
 
 Health:
