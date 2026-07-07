@@ -174,6 +174,14 @@ Important:
 
 The app can be configured before Google approves Basic Access. However, live Google Ads API calls may fail or be restricted until Google approves the token.
 
+Production app behavior:
+
+- `Run growth suite` reads/report readiness and does not create ads by itself.
+- `Draft Google Ads plan` creates an internal draft in the Marketing Agent database.
+- `Validate` sends a validate-only request to Google Ads where possible.
+- `Push paused campaign` sends a mutate request to Google Ads only after explicit owner approval.
+- New campaigns, ad groups, ads, and keywords are pushed as paused resources to prevent accidental spend.
+
 ## OAuth Refresh Token
 
 Purpose:
@@ -218,4 +226,3 @@ Current production health check should show:
   "google_ads_configured": true
 }
 ```
-

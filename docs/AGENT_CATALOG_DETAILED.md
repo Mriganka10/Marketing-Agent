@@ -350,6 +350,7 @@ human_review_required
 Code:
 
 ```text
+app/agents/paid_campaign.py
 app/agents/growth_suite.py
 app/integrations/google_ads.py
 ```
@@ -358,7 +359,9 @@ Purpose:
 
 - connects organic SEO learnings to Google Ads readiness;
 - reads Google Ads campaign reporting when API access is approved and credentials are valid;
-- prepares paid campaign visibility for the Growth Suite.
+- drafts Search campaign plans from generated pages and SEO learnings;
+- validates drafts with Google Ads API;
+- creates or updates Google Ads campaign resources after explicit owner approval.
 
 External services:
 
@@ -367,22 +370,27 @@ External services:
 Inputs:
 
 - campaigns;
+- business profiles;
+- published landing pages;
 - Google Ads OAuth refresh token;
 - developer token;
 - customer IDs.
 
 Output:
 
+- paid ad draft plans;
 - campaign count;
 - impressions;
 - clicks;
 - cost;
 - conversions;
-- paid campaign status.
+- paid campaign status;
+- Google validation response;
+- Google Ads campaign, budget, and ad group resource names after push.
 
 Important:
 
-The current implementation reads and reports campaign data. Any automated spend or campaign launch should remain manually approved.
+The implementation can create Google Ads resources, but it is approval-gated. The API rejects pushes unless the owner sends `approve_google_push=true` and `mode=publish`. New campaigns, ad groups, ads, and keywords are created as `PAUSED`, so spend does not begin until an owner enables them in Google Ads or intentionally changes campaign status.
 
 ## 11. Client Reporting Agent
 
@@ -446,4 +454,3 @@ Current state:
 
 - company-separated views exist;
 - full authenticated client login should be added before giving direct client access.
-

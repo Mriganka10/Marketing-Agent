@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, seoBusiness: "all" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, adPlans: [], seoBusiness: "all" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "pages", "activity"]);
 
@@ -95,6 +95,11 @@ async function loadBusinesses() {
   }
 }
 
+async function loadCampaigns() {
+  state.campaigns = await api("/api/campaigns");
+  renderAdCampaignOptions();
+}
+
 async function loadDashboard() {
   const data = await api("/api/dashboard");
   $("#m-businesses").textContent = data.businesses;
@@ -129,6 +134,11 @@ async function loadGrowthOverview() {
   renderWorkspaces(state.growth.client_workspaces);
   renderReportingSnapshot(state.growth.reporting);
   renderGrowthOrchestration(state.growth.orchestration);
+}
+
+async function loadAdPlans() {
+  state.adPlans = await api("/api/ads/plans");
+  renderPaidAdPlans(state.adPlans);
 }
 
 async function loadPages() {
@@ -354,6 +364,56 @@ function renderGrowthOrchestration(items) {
   `).join("");
 }
 
+function renderAdCampaignOptions() {
+  const select = $("#ad-campaign-select");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = state.campaigns.length
+    ? state.campaigns.map((campaign) => `<option value="${campaign.id}">${escapeHtml(campaign.name)}</option>`).join("")
+    : `<option value="">Create a campaign first</option>`;
+  if (current && state.campaigns.some((campaign) => campaign.id === current)) {
+    select.value = current;
+  }
+}
+
+function renderPaidAdPlans(plans) {
+  const list = $("#paid-plan-list");
+  if (!list) return;
+  list.innerHTML = plans.length ? plans.slice(0, 6).map((plan) => {
+    const keywords = (plan.plan?.keywords || []).slice(0, 5).map((item) => item.text || item).join(", ");
+    const finalUrl = (plan.plan?.final_urls || [])[0] || "-";
+    return `
+      <article class="paid-plan-card">
+        <div class="paid-plan-main">
+          <div>
+            <span class="status-chip ${escapeHtml(plan.status)}">${escapeHtml(plan.status.replaceAll("_", " "))}</span>
+            <h3>${escapeHtml(plan.name)}</h3>
+            <p>${escapeHtml(plan.objective)}</p>
+          </div>
+          <div class="paid-plan-metrics">
+            <span><small>Budget/day</small><strong>${formatCurrency(plan.daily_budget_micros)}</strong></span>
+            <span><small>Region</small><strong>${escapeHtml(plan.target_region)}</strong></span>
+            <span><small>Approval</small><strong>${escapeHtml(plan.approval_status.replaceAll("_", " "))}</strong></span>
+          </div>
+        </div>
+        <div class="paid-plan-assets">
+          <span><strong>Keywords</strong>${escapeHtml(keywords || "No keywords")}</span>
+          <span><strong>Landing URL</strong>${escapeHtml(finalUrl)}</span>
+        </div>
+        <div class="paid-plan-actions">
+          <button type="button" data-ad-action="validate" data-plan-id="${escapeHtml(plan.id)}">Validate with Google</button>
+          <button type="button" class="danger-soft" data-ad-action="push" data-plan-id="${escapeHtml(plan.id)}">Approve & push paused campaign</button>
+        </div>
+      </article>
+    `;
+  }).join("") : `<p class="empty">Draft a Google Ads plan from an existing campaign. Nothing is pushed to Google until you approve it.</p>`;
+}
+
+function formatCurrency(micros) {
+  const value = Number(micros || 0) / 1_000_000;
+  return `₹${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
 async function loadLeads() {
   state.leads = await api("/api/leads");
   renderLeadsTable(state.leads);
@@ -391,7 +451,7 @@ function renderAuditTable(items) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGrowthOverview()]);
+  await Promise.all([loadBusinesses(), loadCampaigns(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGrowthOverview(), loadAdPlans()]);
 }
 
 $("#business-form").addEventListener("submit", async (event) => {
@@ -456,6 +516,48 @@ $("#sync-growth").addEventListener("click", async () => {
     await refreshAll();
   });
   toast("Growth suite synced");
+});
+$("#ad-plan-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  await withProcessing("Drafting Google Ads plan", "The Paid Campaign Agent is converting SEO pages and campaign goals into a paused Google Ads plan.", async () => {
+    await api("/api/ads/plans/draft", {
+      method: "POST",
+      body: JSON.stringify({
+        campaign_id: form.get("campaign_id") || null,
+        daily_budget: Number(form.get("daily_budget") || 5),
+        currency_code: "INR",
+      }),
+    });
+    await Promise.all([loadAdPlans(), loadGrowthOverview(), loadAudit()]);
+  });
+  toast("Google Ads plan drafted");
+});
+$("#paid-plan-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-ad-action]");
+  if (!button) return;
+  const planId = button.dataset.planId;
+  const action = button.dataset.adAction;
+  if (action === "validate") {
+    await withProcessing("Validating Google Ads plan", "Google Ads API is checking the plan without creating or changing live campaigns.", async () => {
+      await api(`/api/ads/plans/${planId}/validate`, { method: "POST", body: JSON.stringify({}) });
+      await Promise.all([loadAdPlans(), loadGrowthOverview(), loadAudit()]);
+    });
+    toast("Google Ads plan validated");
+    return;
+  }
+  if (action === "push") {
+    const approved = window.confirm("This will send the plan to Google Ads. Campaigns and ads are created/kept PAUSED by default, but this is still a live Google Ads account change. Continue?");
+    if (!approved) return;
+    await withProcessing("Pushing paused Google Ads campaign", "The Paid Campaign Agent is creating or updating paused Google Ads resources after owner approval.", async () => {
+      await api(`/api/ads/plans/${planId}/push`, {
+        method: "POST",
+        body: JSON.stringify({ approve_google_push: true, mode: "publish" }),
+      });
+      await Promise.all([loadAdPlans(), loadGrowthOverview(), loadAudit()]);
+    });
+    toast("Google Ads push completed");
+  }
 });
 $("#seo-business-filter").addEventListener("change", (event) => {
   state.seoBusiness = event.target.value;

@@ -192,3 +192,47 @@ See:
 ```text
 docs/GROWTH_SUITE_AGENTS.md
 ```
+
+## Paid Ad Plans
+
+```http
+GET /api/ads/plans
+POST /api/ads/plans/draft
+PATCH /api/ads/plans/{plan_id}
+POST /api/ads/plans/{plan_id}/validate
+POST /api/ads/plans/{plan_id}/push
+```
+
+Purpose:
+
+- drafts Google Ads Search campaign plans from existing business, campaign, and landing-page data;
+- validates the plan with Google Ads API before launch;
+- pushes owner-approved plans into Google Ads as paused resources;
+- updates already-pushed campaign controls such as name, status, and daily budget.
+
+Example draft payload:
+
+```json
+{
+  "campaign_id": "campaign-id",
+  "business_id": "business-id",
+  "daily_budget": 500,
+  "currency_code": "INR"
+}
+```
+
+Push payload:
+
+```json
+{
+  "approve_google_push": true,
+  "mode": "publish"
+}
+```
+
+Guardrails:
+
+- write endpoints require `x-api-key` when `API_KEY` is configured;
+- push is rejected unless `approve_google_push=true` and `mode=publish`;
+- newly created Google Ads campaigns, ad groups, ads, and keywords are created as `PAUSED`;
+- billing spend starts only if an owner later enables the campaign in Google Ads or explicitly changes the stored plan status.

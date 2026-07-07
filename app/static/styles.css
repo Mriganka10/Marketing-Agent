@@ -906,6 +906,158 @@ tbody tr:last-child td { border-bottom: 0; }
   gap: 18px;
 }
 
+.paid-command {
+  border-top: 5px solid var(--accent-2);
+}
+
+.paid-console {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.paid-plan-form,
+.paid-safety {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.paid-plan-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+}
+
+.paid-plan-form label {
+  margin-bottom: 0;
+}
+
+.paid-plan-form button,
+.paid-plan-actions button {
+  min-height: 44px;
+}
+
+.paid-safety {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 14px;
+  border-left: 4px solid var(--accent-2);
+  background: #fcfaf5;
+}
+
+.paid-safety strong,
+.paid-safety span {
+  display: block;
+}
+
+.paid-safety span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.paid-plan-list {
+  display: grid;
+  gap: 12px;
+}
+
+.paid-plan-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-soft);
+}
+
+.paid-plan-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 14px;
+}
+
+.paid-plan-main h3 {
+  margin-top: 8px;
+  margin-bottom: 5px;
+  font-size: 1.12rem;
+}
+
+.paid-plan-main p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.paid-plan-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.paid-plan-metrics span {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid #e3eaee;
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.paid-plan-metrics small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.paid-plan-metrics strong {
+  overflow-wrap: anywhere;
+}
+
+.paid-plan-assets {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.paid-plan-assets span {
+  min-width: 0;
+  padding: 10px 11px;
+  border-radius: 8px;
+  background: #f8fbfb;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.paid-plan-assets strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.paid-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.paid-plan-actions .danger-soft {
+  background: #fff7ed;
+  color: var(--warn);
+  border-color: #f3d2a0;
+}
+
 .workspace-row {
   display: flex;
   justify-content: space-between;
@@ -1402,6 +1554,8 @@ button.ghost {
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .workspace, .two-column, .public-hero, .public-sections, .seo-grid { grid-template-columns: 1fr; }
   .growth-grid, .growth-ops-grid, .integration-board { grid-template-columns: 1fr; }
+  .paid-console, .paid-plan-main, .paid-plan-assets { grid-template-columns: 1fr; }
+  .paid-plan-form { grid-template-columns: 1fr; }
   .integration-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seo-status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seo-report-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }

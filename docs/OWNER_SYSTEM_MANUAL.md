@@ -118,6 +118,8 @@ Growth Suite:
 
 - six advanced growth agents;
 - integration readiness board;
+- Google Ads command center;
+- paid ad draft/validate/paused-push workflow;
 - client workspaces;
 - orchestration flow;
 - executive reporting snapshot.
@@ -162,7 +164,16 @@ Google Ads:
 - manager account ID: `849-129-3027`;
 - OAuth and developer token configured;
 - API readiness is available in the app;
+- Paid Campaign Agent can draft, validate, and push paused Google Ads Search campaign resources;
 - actual API access may still depend on Google Ads Basic Access approval.
+
+Paid campaign safety:
+
+- the app does not silently create campaigns when `Run growth suite` is clicked;
+- the owner must draft a plan in the Google Ads command center;
+- the owner must explicitly validate and approve the push;
+- newly pushed campaigns, ad groups, ads, and keywords are paused by default;
+- spend begins only if an owner enables or modifies the campaign in Google Ads.
 
 DataForSEO:
 
@@ -204,4 +215,3 @@ Read these in order:
 6. `docs/AWS_ENVIRONMENT_AND_SECRETS.md`
 7. `docs/END_TO_END_TEST_CASES.md`
 8. `docs/OPERATIONS_RUNBOOK.md`
-

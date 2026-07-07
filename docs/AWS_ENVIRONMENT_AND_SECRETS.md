@@ -159,6 +159,12 @@ Growth Suite:
 curl -sS https://agenticgrowthlabs.com/api/growth/overview
 ```
 
+Paid ad plans:
+
+```bash
+curl -sS https://agenticgrowthlabs.com/api/ads/plans
+```
+
 SEO integrations:
 
 ```bash
@@ -201,6 +207,10 @@ If values are changed directly in Elastic Beanstalk Configuration:
 3. Confirm health is `Ok`.
 4. Run `/health`.
 
+Google Ads note:
+
+After adding or rotating Google Ads values, the already deployed container will use the new values only after Elastic Beanstalk finishes updating/restarting the environment. No separate code deploy is required for environment-only secret changes, but a code deploy is required for new application features.
+
 If values are changed in SSM and not directly in EB:
 
 1. Update SSM parameter.
@@ -222,4 +232,3 @@ https://agenticgrowthlabs.com
 ```
 
 To make it downloadable from Google Play Store, a separate Android app or Progressive Web App packaging flow would be required. That is not part of the current deployment.
-

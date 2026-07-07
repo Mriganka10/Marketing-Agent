@@ -281,3 +281,26 @@ class GrowthAgentExecution(Base):
     recommendations: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     artifacts: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PaidAdPlan(Base):
+    __tablename__ = "paid_ad_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    business_id: Mapped[str | None] = mapped_column(ForeignKey("business_profiles.id"))
+    campaign_id: Mapped[str | None] = mapped_column(ForeignKey("campaigns.id"))
+    name: Mapped[str] = mapped_column(String(180), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    target_region: Mapped[str] = mapped_column(String(120), default="India")
+    daily_budget_micros: Mapped[int] = mapped_column(Integer, default=5000000)
+    status: Mapped[str] = mapped_column(String(40), default="draft")
+    approval_status: Mapped[str] = mapped_column(String(40), default="needs_review")
+    google_campaign_resource_name: Mapped[str | None] = mapped_column(String(255))
+    google_budget_resource_name: Mapped[str | None] = mapped_column(String(255))
+    google_ad_group_resource_name: Mapped[str | None] = mapped_column(String(255))
+    plan: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    validation_response: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    push_response: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_by: Mapped[str] = mapped_column(String(120), default="paid_campaign_agent")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

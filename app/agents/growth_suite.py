@@ -17,6 +17,7 @@ from app.models.entities import (
     GrowthAgentExecution,
     LandingPage,
     Lead,
+    PaidAdPlan,
     RefreshRecommendation,
 )
 from app.models.schemas import GrowthAgentCard, GrowthSuiteOverview
@@ -40,7 +41,7 @@ class GrowthSuiteAgent:
             self._ai_search_visibility(businesses, pages, settings),
             self._backlink_authority(businesses, campaigns, dataforseo),
             self._auto_refresh_approval(db, campaigns, seo),
-            self._paid_campaigns(campaigns, google_ads),
+            self._paid_campaigns(db, campaigns, google_ads),
             self._client_reporting(businesses, campaigns, pages, leads, seo),
             self._workspace_access(businesses, campaigns, pages, leads),
         ]
@@ -184,7 +185,7 @@ class GrowthSuiteAgent:
             artifacts={"refresh_queue": [page.model_dump() for page in weak_pages[:8]]},
         )
 
-    def _paid_campaigns(self, campaigns: list[Campaign], google_ads: GoogleAdsClient) -> GrowthAgentCard:
+    def _paid_campaigns(self, db: Session, campaigns: list[Campaign], google_ads: GoogleAdsClient) -> GrowthAgentCard:
         ads_error = None
         ads_campaigns = []
         if google_ads.is_configured:
@@ -213,6 +214,8 @@ class GrowthSuiteAgent:
         clicks = sum(item.clicks for item in ads_campaigns)
         cost = sum(item.cost_micros for item in ads_campaigns) / 1_000_000
         conversions = sum(item.conversions for item in ads_campaigns)
+        draft_count = db.query(func.count(PaidAdPlan.id)).filter(PaidAdPlan.status == "draft").scalar() or 0
+        pushed_count = db.query(func.count(PaidAdPlan.id)).filter(PaidAdPlan.status == "pushed_to_google").scalar() or 0
         return GrowthAgentCard(
             key="paid_campaigns",
             name="Paid Campaign Agent",
@@ -225,11 +228,13 @@ class GrowthSuiteAgent:
                 "clicks": clicks,
                 "cost": round(cost, 2),
                 "conversions": round(conversions, 2),
+                "draft_plans": draft_count,
+                "pushed_plans": pushed_count,
                 "error": ads_error,
             },
             recommendations=[
                 {"title": "Map top organic pages to paid ad groups", "impact": "Use SEO winners as lower-risk ad themes."},
-                {"title": "Keep spend approvals manual", "impact": "Avoid accidental billing while API access is under review."},
+                {"title": "Draft, validate, then approve", "impact": "Google Ads changes stay paused and owner-approved before spend."},
             ],
             artifacts={
                 "campaigns": [

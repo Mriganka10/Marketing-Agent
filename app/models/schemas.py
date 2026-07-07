@@ -245,3 +245,46 @@ class GrowthSuiteOverview(BaseModel):
     client_workspaces: list[dict[str, Any]]
     orchestration: list[dict[str, Any]]
     reporting: dict[str, Any]
+
+
+class PaidAdPlanDraftRequest(BaseModel):
+    campaign_id: str | None = None
+    business_id: str | None = None
+    daily_budget: float = Field(default=5.0, gt=0, le=5000)
+    currency_code: str = "INR"
+
+
+class PaidAdPlanUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=180)
+    objective: str | None = Field(default=None, min_length=8)
+    target_region: str | None = Field(default=None, min_length=2, max_length=120)
+    daily_budget: float | None = Field(default=None, gt=0, le=5000)
+    plan: dict[str, Any] | None = None
+
+
+class PaidAdPlanPushRequest(BaseModel):
+    approve_google_push: bool = False
+    mode: str = Field(default="validate_only", pattern="^(validate_only|publish)$")
+
+
+class PaidAdPlanRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    business_id: str | None
+    campaign_id: str | None
+    name: str
+    objective: str
+    target_region: str
+    daily_budget_micros: int
+    status: str
+    approval_status: str
+    google_campaign_resource_name: str | None
+    google_budget_resource_name: str | None
+    google_ad_group_resource_name: str | None
+    plan: dict[str, Any]
+    validation_response: dict[str, Any]
+    push_response: dict[str, Any]
+    created_by: str
+    created_at: datetime
+    updated_at: datetime

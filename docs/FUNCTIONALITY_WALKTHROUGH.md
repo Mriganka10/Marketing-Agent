@@ -364,7 +364,55 @@ What it shows:
 - executive reporting snapshot;
 - orchestration steps.
 
-## 11. Audit And Governance
+## 11. Paid Campaign Creation And Modification
+
+Screen:
+
+```text
+Growth Suite
+```
+
+Backend endpoints:
+
+- `GET /api/ads/plans`;
+- `POST /api/ads/plans/draft`;
+- `PATCH /api/ads/plans/{plan_id}`;
+- `POST /api/ads/plans/{plan_id}/validate`;
+- `POST /api/ads/plans/{plan_id}/push`.
+
+Agent:
+
+```text
+Paid Campaign Agent
+```
+
+What it does:
+
+- uses selected business/campaign context;
+- picks published landing pages as final URLs;
+- creates a Google Search campaign plan;
+- generates keyword, headline, and description assets;
+- stores the plan in `paid_ad_plans`;
+- validates the plan with Google Ads API;
+- pushes approved plans into Google Ads as paused campaigns;
+- updates already-pushed campaign name, budget, and status controls.
+
+Owner approval rule:
+
+The push endpoint refuses to create or modify Google Ads resources unless the request includes:
+
+```json
+{
+  "approve_google_push": true,
+  "mode": "publish"
+}
+```
+
+Billing safety:
+
+New Google Ads campaign resources are created with `PAUSED` status. This means the campaign exists in Google Ads, but it should not spend money until an owner reviews and enables it in Google Ads or deliberately changes campaign status.
+
+## 12. Audit And Governance
 
 Screen:
 
@@ -391,9 +439,10 @@ What is tracked:
 - agent loop runs;
 - SEO syncs;
 - Growth Suite syncs;
+- paid ad plan drafting, validation, and push attempts;
 - lead and page activity where applicable.
 
-## 12. Search Engine Discovery Flow
+## 13. Search Engine Discovery Flow
 
 Generated pages become discoverable through:
 
@@ -408,4 +457,3 @@ Generated pages become discoverable through:
 Important:
 
 The app can improve SEO readiness and request discovery signals through sitemap/indexing setup, but Google decides whether and when to index or rank pages.
-

@@ -24,7 +24,10 @@ The new Growth Suite adds the client package layer around that loop:
 4. Paid Campaign Agent
    - Connects to Google Ads API using developer token, OAuth client, refresh token, and customer IDs.
    - Reads campaign performance once Google Ads API access is approved.
-   - Keeps spend and campaign launch approvals manual to avoid accidental billing.
+   - Drafts Search campaign plans from approved business, campaign, and landing-page data.
+   - Validates drafts against Google Ads API before publishing.
+   - Creates or updates Google Ads campaigns only after explicit owner approval.
+   - Creates new campaigns, ad groups, ads, and keywords as paused resources to avoid accidental billing.
 
 5. Client Reporting Agent
    - Packages SEO, campaign, lead, and refresh performance into an executive snapshot.
@@ -121,10 +124,16 @@ For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. 
 8. Go to `Growth Suite`.
 9. Click `Run growth suite`.
 10. Review six agent cards, integration readiness, client workspaces, reporting snapshot, and orchestration flow.
+11. In the Google Ads command center, choose a campaign and daily budget.
+12. Click `Draft Google Ads plan`.
+13. Review headlines, keywords, final URL, status, and budget.
+14. Click `Validate` to ask Google Ads API to validate the plan.
+15. Click `Push paused campaign` only after owner approval.
 
 ## Production Notes
 
 - The Growth Suite is safe to demo without all third-party secrets. Missing integrations show as pending instead of breaking the page.
-- Google Ads campaign reads may remain pending until Google approves Basic Access.
+- Google Ads campaign reads, validation, and push may remain pending until Google approves the account/API access level.
+- Paid campaign push is intentionally approval-gated and creates paused Google Ads resources by default.
 - Refresh recommendations are intentionally approval-based. Fully automatic publishing can be enabled later once clients approve governance rules.
 - Do not commit service account JSON, developer tokens, API passwords, OAuth secrets, or refresh tokens to Git.

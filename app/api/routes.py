@@ -16,6 +16,7 @@ from app.agents.lead_capture import LeadCaptureAgent
 from app.agents.llm import LLMService
 from app.agents.growth_suite import GrowthSuiteAgent
 from app.agents.orchestrator import MarketingOrchestrator
+from app.agents.paid_campaign import PaidCampaignAgent
 from app.agents.research import ResearchAgent
 from app.agents.seo_analytics import SeoAnalyticsAgent
 from app.core.config import Settings, get_settings
@@ -29,6 +30,7 @@ from app.models.entities import (
     Campaign,
     LandingPage,
     Lead,
+    PaidAdPlan,
     RefreshRecommendation,
 )
 from app.models.schemas import (
@@ -41,6 +43,10 @@ from app.models.schemas import (
     LeadCreate,
     LeadRead,
     PageEventCreate,
+    PaidAdPlanDraftRequest,
+    PaidAdPlanPushRequest,
+    PaidAdPlanRead,
+    PaidAdPlanUpdateRequest,
     RecommendationRead,
     RunRequest,
     RunSummary,
@@ -287,6 +293,84 @@ def sync_growth_agents(
     llm: LLMService = Depends(get_llm),
 ) -> GrowthSuiteOverview:
     return GrowthSuiteAgent(llm).overview(db, settings, persist=True)
+
+
+@router.get("/api/ads/plans", response_model=list[PaidAdPlanRead])
+def list_paid_ad_plans(db: Session = Depends(get_db)) -> list[PaidAdPlan]:
+    return PaidCampaignAgent().list_plans(db)
+
+
+@router.post(
+    "/api/ads/plans/draft",
+    response_model=PaidAdPlanRead,
+    dependencies=[Depends(require_api_key)],
+)
+def draft_paid_ad_plan(
+    payload: PaidAdPlanDraftRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> PaidAdPlan:
+    if payload.campaign_id and not db.get(Campaign, payload.campaign_id):
+        raise HTTPException(status_code=404, detail="Campaign not found.")
+    if payload.business_id and not db.get(BusinessProfile, payload.business_id):
+        raise HTTPException(status_code=404, detail="Business profile not found.")
+    return PaidCampaignAgent().draft_plan(db, settings, payload)
+
+
+@router.patch(
+    "/api/ads/plans/{plan_id}",
+    response_model=PaidAdPlanRead,
+    dependencies=[Depends(require_api_key)],
+)
+def update_paid_ad_plan(
+    plan_id: str,
+    payload: PaidAdPlanUpdateRequest,
+    db: Session = Depends(get_db),
+) -> PaidAdPlan:
+    plan = db.get(PaidAdPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Paid ad plan not found.")
+    return PaidCampaignAgent().update_plan(db, plan, payload)
+
+
+@router.post(
+    "/api/ads/plans/{plan_id}/validate",
+    response_model=PaidAdPlanRead,
+    dependencies=[Depends(require_api_key)],
+)
+def validate_paid_ad_plan(
+    plan_id: str,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> PaidAdPlan:
+    plan = db.get(PaidAdPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Paid ad plan not found.")
+    return PaidCampaignAgent().validate_with_google(db, settings, plan)
+
+
+@router.post(
+    "/api/ads/plans/{plan_id}/push",
+    response_model=PaidAdPlanRead,
+    dependencies=[Depends(require_api_key)],
+)
+def push_paid_ad_plan(
+    plan_id: str,
+    payload: PaidAdPlanPushRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> PaidAdPlan:
+    plan = db.get(PaidAdPlan, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Paid ad plan not found.")
+    if payload.mode == "validate_only":
+        return PaidCampaignAgent().validate_with_google(db, settings, plan)
+    if not payload.approve_google_push:
+        raise HTTPException(
+            status_code=400,
+            detail="Live Google Ads push requires approve_google_push=true and mode=publish.",
+        )
+    return PaidCampaignAgent().push_to_google(db, settings, plan)
 
 
 @router.get("/api/audit")

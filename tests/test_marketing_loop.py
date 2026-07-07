@@ -464,3 +464,54 @@ def test_growth_suite_overview_and_sync(client):
 
     audit = client.get("/api/audit").json()
     assert any(event["action"] == "growth_suite_synced" for event in audit)
+
+
+def test_paid_campaign_agent_drafts_and_guards_google_push(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Agentic Growth Labs",
+            "website": "https://agenticgrowthlabs.com",
+            "industry": "SEO and marketing automation",
+            "audience": "Marketing teams replacing manual ad and SEO operations",
+            "value_proposition": "We connect SEO pages, analytics, and paid campaign execution.",
+            "offers": ["SEO automation", "Google Ads launch planning"],
+            "competitors": ["Gushwork"],
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Paid growth validation",
+            "goal": "Generate qualified demo requests from paid search.",
+            "target_region": "India",
+        },
+    ).json()["id"]
+    client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True})
+
+    draft = client.post(
+        "/api/ads/plans/draft",
+        json={"campaign_id": campaign_id, "daily_budget": 7, "currency_code": "INR"},
+    )
+    assert draft.status_code == 200
+    plan = draft.json()
+    assert plan["status"] == "draft"
+    assert plan["approval_status"] == "needs_review"
+    assert plan["daily_budget_micros"] == 7_000_000
+    assert plan["plan"]["campaign_status"] == "PAUSED"
+    assert plan["plan"]["ad_group_status"] == "PAUSED"
+    assert plan["plan"]["keywords"]
+
+    blocked = client.post(
+        f"/api/ads/plans/{plan['id']}/push",
+        json={"approve_google_push": False, "mode": "publish"},
+    )
+    assert blocked.status_code == 400
+
+    validate = client.post(f"/api/ads/plans/{plan['id']}/validate")
+    assert validate.status_code == 200
+    assert validate.json()["status"] == "validation_failed"
+
+    audit = client.get("/api/audit").json()
+    assert any(event["action"] == "paid_ad_plan_drafted" for event in audit)

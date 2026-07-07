@@ -618,6 +618,53 @@ Business interpretation:
 
 This prevents over-claiming. The platform can demo the complete workflow immediately, while live external data depends on the third-party access status.
 
+## Test Case 16: Draft, Validate, And Push A Paused Google Ads Campaign
+
+Business value:
+
+Shows that the Paid Campaign Agent can turn the best organic SEO/page work into a paid acquisition plan without losing owner control over billing.
+
+Preconditions:
+
+- Google Ads credentials are configured in AWS.
+- Google Ads API access is approved enough for validation and mutate calls.
+- At least one business, campaign, and published landing page exists.
+- Owner understands that the push creates Google Ads resources, even though they are paused by default.
+
+Steps:
+
+1. Open `https://agenticgrowthlabs.com`.
+2. Go to `Growth Suite`.
+3. Scroll to the `Google Ads command center`.
+4. Select the source campaign.
+5. Enter a conservative daily budget.
+6. Click `Draft Google Ads plan`.
+7. Confirm a new plan card appears with:
+   - campaign name;
+   - budget;
+   - approval status;
+   - final URL;
+   - generated keywords.
+8. Click `Validate`.
+9. Confirm the status becomes `validated` or review the returned validation error.
+10. Click `Push paused campaign` only after owner approval.
+11. Accept the browser confirmation dialog.
+12. Open Google Ads and confirm the campaign, budget, ad group, keywords, and responsive search ad exist.
+13. Confirm the Google Ads campaign is paused.
+14. Go to `Activity` and confirm paid ad audit events exist.
+
+Expected result:
+
+- Drafts are saved in `paid_ad_plans`.
+- Validation writes a Google response to `validation_response`.
+- Push writes a Google response to `push_response`.
+- New Google resources are paused.
+- No spend starts until the owner enables the campaign in Google Ads.
+
+Business interpretation:
+
+This bridges SEO and paid marketing. Winning pages and keywords can become paid campaigns, but spend remains approval-controlled.
+
 ## End-To-End Acceptance Criteria
 
 The full test is successful when:
@@ -634,6 +681,7 @@ The full test is successful when:
 - company filter narrows page performance cards,
 - Growth Suite runs all six additional agents,
 - readiness cards clearly show OpenAI, DataForSEO, Google Ads, GA4, and Search Console status,
+- Paid Campaign Agent can draft, validate, and push paused Google Ads campaign resources,
 - client workspaces separate metrics by business,
 - recommendations explain what to improve next.
 

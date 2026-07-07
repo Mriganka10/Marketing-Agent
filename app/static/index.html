@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=growth-suite-20260707-1" />
+  <link rel="stylesheet" href="/static/styles.css?v=paid-ads-20260707-1" />
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=growth-suite-20260707-1" alt="Marketing Agent logo" />
+        <img class="brand-mark" src="/static/marketing-agent-logo.svg?v=paid-ads-20260707-1" alt="Marketing Agent logo" />
         <div>
           <strong>Marketing Agent</strong>
           <small>Autonomous demand engine</small>
@@ -40,7 +40,7 @@
             <p class="header-copy">Run the full SEO growth loop from business memory to demand research, landing pages, lead capture, Google analytics, and refresh decisions.</p>
           </div>
           <div class="hero-visual" aria-hidden="true">
-            <img src="/static/marketing-agent-logo.svg?v=growth-suite-20260707-1" alt="" />
+            <img src="/static/marketing-agent-logo.svg?v=paid-ads-20260707-1" alt="" />
             <div>
               <span>Memory</span>
               <span>Research</span>
@@ -95,6 +95,31 @@
         <div class="integration-board" id="growth-readiness"></div>
 
         <div class="growth-grid" id="growth-agent-grid"></div>
+
+        <div class="panel paid-command">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Paid Campaign Agent</p>
+              <h2>Google Ads command center</h2>
+            </div>
+          </div>
+          <div class="paid-console">
+            <form id="ad-plan-form" class="paid-plan-form">
+              <label>Campaign
+                <select name="campaign_id" id="ad-campaign-select"></select>
+              </label>
+              <label>Daily budget
+                <input name="daily_budget" type="number" min="1" max="5000" step="1" value="5" />
+              </label>
+              <button type="submit">Draft Google Ads plan</button>
+            </form>
+            <div class="paid-safety">
+              <strong>Owner approval guardrail</strong>
+              <span>Plans are drafted locally first. Validation uses Google Ads API dry-run. Live push requires explicit approval and creates campaigns paused by default.</span>
+            </div>
+          </div>
+          <div id="paid-plan-list" class="paid-plan-list"></div>
+        </div>
 
         <div class="growth-ops-grid">
           <div class="panel">
@@ -182,7 +207,7 @@
               <p class="eyebrow">Business Memory Agent</p>
               <h2>Business profile</h2>
             </div>
-            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=growth-suite-20260707-1" alt="" />
+            <img class="panel-agent-mark" src="/static/marketing-agent-logo.svg?v=paid-ads-20260707-1" alt="" />
           </div>
           <form id="business-form" class="grid-form">
             <label>Business name<input name="name" required value="Northstar Growth Labs" /></label>
@@ -299,7 +324,7 @@
       <div class="agent-loader" aria-hidden="true">
         <span class="signal signal-a"></span>
         <span class="signal signal-b"></span>
-        <img src="/static/marketing-agent-logo.svg?v=growth-suite-20260707-1" alt="" />
+        <img src="/static/marketing-agent-logo.svg?v=paid-ads-20260707-1" alt="" />
         <span class="signal signal-c"></span>
       </div>
       <strong id="processing-title">Processing</strong>
@@ -312,6 +337,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=growth-suite-20260707-1"></script>
+  <script src="/static/app.js?v=paid-ads-20260707-1"></script>
 </body>
 </html>

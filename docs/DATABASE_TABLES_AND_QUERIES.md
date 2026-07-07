@@ -30,6 +30,7 @@ erDiagram
     campaigns ||--o{ demand_signals : generates
     campaigns ||--o{ landing_pages : publishes
     campaigns ||--o{ leads : captures
+    campaigns ||--o{ paid_ad_plans : drafts
     landing_pages ||--o{ leads : receives
     landing_pages ||--o{ seo_search_metrics : has
     landing_pages ||--o{ analytics_page_metrics : has
@@ -196,6 +197,71 @@ join campaigns c on c.id = r.campaign_id
 join business_profiles b on b.id = c.business_id
 left join landing_pages p on p.id = r.page_id
 order by r.created_at desc;
+```
+
+### `paid_ad_plans`
+
+Stores Paid Campaign Agent drafts, Google validation responses, Google push responses, and Google Ads resource names.
+
+Important columns:
+
+- `business_id`;
+- `campaign_id`;
+- `name`;
+- `objective`;
+- `target_region`;
+- `daily_budget_micros`;
+- `status`;
+- `approval_status`;
+- `google_campaign_resource_name`;
+- `google_budget_resource_name`;
+- `google_ad_group_resource_name`;
+- `plan`;
+- `validation_response`;
+- `push_response`.
+
+Status values:
+
+```text
+draft
+validated
+validation_failed
+pushed_to_google
+push_failed
+```
+
+Approval values:
+
+```text
+needs_review
+ready_for_owner_approval
+approved
+```
+
+Owner query:
+
+```sql
+select p.created_at,
+       b.name as business,
+       c.name as source_campaign,
+       p.name as google_ads_plan,
+       p.status,
+       p.approval_status,
+       round((p.daily_budget_micros / 1000000.0)::numeric, 2) as daily_budget,
+       p.google_campaign_resource_name
+from paid_ad_plans p
+left join business_profiles b on b.id = p.business_id
+left join campaigns c on c.id = p.campaign_id
+order by p.created_at desc;
+```
+
+Audit query for paid campaign actions:
+
+```sql
+select created_at, actor, action, entity_id, event_metadata
+from audit_events
+where entity_type = 'paid_ad_plan'
+order by created_at desc;
 ```
 
 ## SEO And Analytics Tables
@@ -421,4 +487,3 @@ where b.name ilike '%Kairoz%'
 group by b.name, p.slug, p.title, p.status
 order by google_impressions desc, ga4_sessions desc, leads desc;
 ```
-
