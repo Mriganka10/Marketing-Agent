@@ -134,11 +134,13 @@ async function loadGrowthOverview() {
   renderWorkspaces(state.growth.client_workspaces);
   renderReportingSnapshot(state.growth.reporting);
   renderGrowthOrchestration(state.growth.orchestration);
+  renderGrowthLogs();
 }
 
 async function loadAdPlans() {
   state.adPlans = await api("/api/ads/plans");
   renderPaidAdPlans(state.adPlans);
+  renderGrowthLogs();
 }
 
 async function loadPages() {
@@ -280,24 +282,41 @@ function renderGrowthReadiness(readiness, mode) {
 
 function renderGrowthAgents(agents) {
   $("#growth-agent-grid").innerHTML = agents.map((agent, index) => {
+    const profile = agentProfile(agent.key || agent.name);
     const metricEntries = Object.entries(agent.metrics || {})
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
       .slice(0, 4);
     return `
-      <article class="growth-agent-card">
+      <article class="growth-agent-card premium-agent-card">
         <div class="agent-card-top">
-          <span class="agent-number">${String(index + 1).padStart(2, "0")}</span>
+          <div class="agent-identity">
+            <span class="agent-visual ${escapeHtml(profile.tone)}">
+              <img src="/static/marketing-agent-logo.svg?v=premium-agents-20260707-1" alt="" />
+              <b>${escapeHtml(profile.initials)}</b>
+            </span>
+            <span class="agent-number">${String(index + 1).padStart(2, "0")}</span>
+          </div>
           <span class="agent-status ${escapeHtml(agent.status)}">${escapeHtml(agent.status.replaceAll("_", " "))}</span>
         </div>
         <h3>${escapeHtml(agent.name)}</h3>
-        <p>${escapeHtml(agent.summary)}</p>
-        <div class="agent-metrics">
+        <div class="agent-section">
+          <small>Purpose</small>
+          <p>${escapeHtml(profile.purpose || agent.summary)}</p>
+        </div>
+        <div class="signal-tags">
+          ${profile.signals.map((signal) => `<span>${escapeHtml(signal)}</span>`).join("")}
+        </div>
+        <div class="agent-metrics signal-board">
           ${metricEntries.map(([key, value]) => `
             <span>
               <small>${escapeHtml(key.replaceAll("_", " "))}</small>
               <strong>${escapeHtml(formatMetricValue(value))}</strong>
             </span>
           `).join("")}
+        </div>
+        <div class="agent-section next-action">
+          <small>Primary action</small>
+          <p>${escapeHtml(profile.action)}</p>
         </div>
         <div class="agent-recs">
           ${(agent.recommendations || []).slice(0, 2).map((rec) => `
@@ -310,6 +329,103 @@ function renderGrowthAgents(agents) {
       </article>
     `;
   }).join("");
+}
+
+function agentProfile(key) {
+  const normalized = String(key || "").toLowerCase();
+  const profiles = {
+    ai_search_visibility: {
+      initials: "AI",
+      tone: "ai",
+      purpose: "Audits whether your brand and pages are likely to appear in ChatGPT/OpenAI answer journeys.",
+      signals: ["OpenAI answers", "Brand proof", "Top pages"],
+      action: "Create answer-ready explainers, comparison pages, and structured proof blocks.",
+    },
+    backlink_authority: {
+      initials: "BA",
+      tone: "authority",
+      purpose: "Finds backlink gaps, authority opportunities, and keyword demand from DataForSEO-backed signals.",
+      signals: ["DataForSEO", "Referring domains", "Keyword gaps"],
+      action: "Prioritize authority-building topics and partner outreach around high-intent demand.",
+    },
+    auto_refresh_approval: {
+      initials: "AR",
+      tone: "refresh",
+      purpose: "Turns weak CTR, traffic, and lead signals into owner-approved page refresh plans.",
+      signals: ["GSC CTR", "GA4 sessions", "Lead rate"],
+      action: "Queue low-performing pages for content depth, internal links, and CTA improvements.",
+    },
+    paid_campaigns: {
+      initials: "AD",
+      tone: "ads",
+      purpose: "Drafts, validates, and safely pushes paused Google Ads campaigns from proven SEO pages.",
+      signals: ["Google Ads", "Budgets", "Search themes"],
+      action: "Map winning organic pages to Search/Performance Max plans with manual approval.",
+    },
+    client_reporting: {
+      initials: "CR",
+      tone: "reporting",
+      purpose: "Packages SEO, leads, paid activity, and refresh decisions into client-ready reporting.",
+      signals: ["Client KPIs", "Page health", "Leads"],
+      action: "Produce weekly summaries that explain what changed, why it changed, and what is next.",
+    },
+    client_workspace_access: {
+      initials: "CW",
+      tone: "workspace",
+      purpose: "Partitions pages, leads, and metrics by business so each client view stays clean.",
+      signals: ["Business ID", "Roles", "Governance"],
+      action: "Keep reporting filtered by company and prepare role-based access for external rollout.",
+    },
+  };
+  return profiles[normalized] || {
+    initials: "AG",
+    tone: "default",
+    purpose: "Coordinates one part of the autonomous growth workflow.",
+    signals: ["Automation", "Audit log", "Client output"],
+    action: "Review recommendations and approve the next high-impact action.",
+  };
+}
+
+function renderGrowthLogs() {
+  const list = $("#growth-log-list");
+  if (!list) return;
+  const relevantActions = new Set([
+    "growth_suite_synced",
+    "seo_metrics_synced",
+    "paid_ad_plan_drafted",
+    "paid_ad_plan_validated",
+    "paid_ad_plan_pushed",
+    "campaign_created",
+    "agent_loop_completed",
+    "business_profile_saved",
+    "landing_pages_created",
+  ]);
+  const events = state.audit
+    .filter((event) => relevantActions.has(event.action) || String(event.actor || "").includes("agent"))
+    .slice(0, 5);
+  list.innerHTML = events.length ? events.map((event) => `
+    <article class="agent-log-row">
+      <span class="log-dot ${escapeHtml(logTone(event.action))}"></span>
+      <div>
+        <strong>${escapeHtml(actionLabel(event.action))}</strong>
+        <small>${escapeHtml(event.actor || "system")} · ${escapeHtml(formatDate(event.created_at))}</small>
+      </div>
+    </article>
+  `).join("") : `
+    <p class="empty">Run the growth suite or agent loop to populate live operating logs.</p>
+  `;
+}
+
+function actionLabel(action) {
+  return String(action || "event").replaceAll("_", " ");
+}
+
+function logTone(action) {
+  if (String(action).includes("paid")) return "ads";
+  if (String(action).includes("seo")) return "seo";
+  if (String(action).includes("growth")) return "growth";
+  if (String(action).includes("business")) return "memory";
+  return "default";
 }
 
 function formatMetricValue(value) {
@@ -437,6 +553,7 @@ function renderLeadsTable(items) {
 async function loadAudit() {
   state.audit = await api("/api/audit");
   renderAuditTable(state.audit);
+  renderGrowthLogs();
 }
 
 function renderAuditTable(items) {
