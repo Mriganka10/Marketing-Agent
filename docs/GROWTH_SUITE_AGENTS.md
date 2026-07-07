@@ -1,0 +1,130 @@
+# Growth Suite Agents
+
+This release extends the original marketing loop with six production-oriented agents. The core flow remains:
+
+Business memory -> research -> page creation -> lead capture -> SEO analytics -> refresh.
+
+The new Growth Suite adds the client package layer around that loop:
+
+1. AI Search Visibility Agent
+   - Checks whether a brand is likely to appear in ChatGPT/OpenAI-style answer journeys.
+   - Uses the configured OpenAI model when `OPENAI_API_KEY` is present.
+   - Current production scope is OpenAI/ChatGPT only; Perplexity, Gemini, and other answer engines remain future scope.
+
+2. Backlink / Authority Agent
+   - Uses DataForSEO-ready credentials to show authority, referring-domain, backlink, and keyword opportunity signals.
+   - Keeps a deterministic fallback so client demos still work if DataForSEO balance or access is not ready.
+   - Helps decide which pages need external authority support, not just on-page editing.
+
+3. Auto Refresh + Approval Agent
+   - Reviews page health, Google impressions, clicks, CTR, position, GA4 sessions, leads, and conversion rate.
+   - Converts weak page signals into refresh recommendations.
+   - Keeps human approval as the production guardrail before publishing major changes.
+
+4. Paid Campaign Agent
+   - Connects to Google Ads API using developer token, OAuth client, refresh token, and customer IDs.
+   - Reads campaign performance once Google Ads API access is approved.
+   - Keeps spend and campaign launch approvals manual to avoid accidental billing.
+
+5. Client Reporting Agent
+   - Packages SEO, campaign, lead, and refresh performance into an executive snapshot.
+   - Supports client-facing reporting by business.
+
+6. Client Workspace / Access Control Agent
+   - Partitions pages, leads, reports, and SEO metrics by `business_id`.
+   - Gives GreyRadius, Kairoz, or any future client a separated workspace view.
+   - Current implementation is workspace partitioning and governance-ready UI. Full authenticated client login is the next hardening step before external self-serve rollout.
+
+## API Endpoints
+
+- `GET /api/growth/overview`
+  - Reads the full suite status, agent cards, client workspaces, report snapshot, and integration readiness.
+
+- `POST /api/growth/sync`
+  - Runs the suite and writes `growth_agent_executions` plus an audit event.
+  - Requires the same `x-api-key` protection as other write APIs when `API_KEY` is configured.
+
+## AWS Environment Variables
+
+The deployment script reads production values from AWS Systems Manager Parameter Store under:
+
+```text
+/marketing-agent/prod
+```
+
+Add these values as SecureString parameters before a deploy if you want the live production site to use them immediately. If they are not present yet, the deployed UI will still work and will show those integrations as pending.
+
+Required for OpenAI visibility:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL=gpt-5.5`
+- `OPENAI_REASONING_EFFORT=medium`
+- `OPENAI_EMBEDDING_MODEL=text-embedding-3-large`
+
+Already used by SEO/GA4/GSC:
+
+- `PUBLIC_BASE_URL=https://agenticgrowthlabs.com`
+- `GA4_MEASUREMENT_ID=G-KZ3N4G2S20`
+- `GA4_PROPERTY_ID=544328945`
+- `GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:agenticgrowthlabs.com`
+- `GOOGLE_SERVICE_ACCOUNT_JSON=<entire service-account JSON as one line>`
+
+Required for DataForSEO:
+
+- `DATAFORSEO_ENABLED=true`
+- `DATAFORSEO_LOGIN=<DataForSEO API login>`
+- `DATAFORSEO_PASSWORD=<DataForSEO API password>`
+
+SSM parameter names:
+
+```text
+/marketing-agent/prod/dataforseo-enabled
+/marketing-agent/prod/dataforseo-login
+/marketing-agent/prod/dataforseo-password
+```
+
+Required for Google Ads:
+
+- `GOOGLE_ADS_ENABLED=true`
+- `GOOGLE_ADS_DEVELOPER_TOKEN=<Google Ads developer token>`
+- `GOOGLE_ADS_CLIENT_ID=<Google Cloud Web OAuth client ID>`
+- `GOOGLE_ADS_CLIENT_SECRET=<Google Cloud Web OAuth client secret>`
+- `GOOGLE_ADS_REFRESH_TOKEN=<production refresh token>`
+- `GOOGLE_ADS_LOGIN_CUSTOMER_ID=8491293027`
+- `GOOGLE_ADS_CUSTOMER_ID=8491293027`
+- `GOOGLE_ADS_API_VERSION=v23`
+
+SSM parameter names:
+
+```text
+/marketing-agent/prod/google-ads-enabled
+/marketing-agent/prod/google-ads-developer-token
+/marketing-agent/prod/google-ads-client-id
+/marketing-agent/prod/google-ads-client-secret
+/marketing-agent/prod/google-ads-refresh-token
+/marketing-agent/prod/google-ads-login-customer-id
+/marketing-agent/prod/google-ads-customer-id
+/marketing-agent/prod/google-ads-api-version
+```
+
+For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. When a real child ad account is linked, replace it with the child customer ID and keep `GOOGLE_ADS_LOGIN_CUSTOMER_ID` as the manager account ID.
+
+## Demo Flow
+
+1. Open `https://agenticgrowthlabs.com`.
+2. Go to `Launch`.
+3. Save or select a business.
+4. Launch the agent loop to generate pages.
+5. Go to `SEO Analytics`.
+6. Click `Sync SEO metrics`.
+7. Use the company filter to view the selected client's page performance.
+8. Go to `Growth Suite`.
+9. Click `Run growth suite`.
+10. Review six agent cards, integration readiness, client workspaces, reporting snapshot, and orchestration flow.
+
+## Production Notes
+
+- The Growth Suite is safe to demo without all third-party secrets. Missing integrations show as pending instead of breaking the page.
+- Google Ads campaign reads may remain pending until Google approves Basic Access.
+- Refresh recommendations are intentionally approval-based. Fully automatic publishing can be enabled later once clients approve governance rules.
+- Do not commit service account JSON, developer tokens, API passwords, OAuth secrets, or refresh tokens to Git.

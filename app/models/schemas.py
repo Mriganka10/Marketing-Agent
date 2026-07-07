@@ -224,3 +224,24 @@ class DashboardSummary(BaseModel):
     conversion_rate: float
     recent_leads: list[LeadRead]
     recommendations: list[RecommendationRead]
+
+
+class GrowthAgentCard(BaseModel):
+    key: str
+    name: str
+    status: str
+    mode: str
+    summary: str
+    metrics: dict[str, Any]
+    recommendations: list[dict[str, Any]]
+    artifacts: dict[str, Any] = {}
+    updated_at: datetime | None = None
+
+
+class GrowthSuiteOverview(BaseModel):
+    mode: str
+    readiness: dict[str, Any]
+    agents: list[GrowthAgentCard]
+    client_workspaces: list[dict[str, Any]]
+    orchestration: list[dict[str, Any]]
+    reporting: dict[str, Any]

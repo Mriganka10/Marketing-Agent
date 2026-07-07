@@ -265,3 +265,19 @@ class SitemapSubmission(Base):
     status: Mapped[str] = mapped_column(String(40), default="pending")
     response: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     submitted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class GrowthAgentExecution(Base):
+    __tablename__ = "growth_agent_executions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    agent_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    business_id: Mapped[str | None] = mapped_column(ForeignKey("business_profiles.id"))
+    campaign_id: Mapped[str | None] = mapped_column(ForeignKey("campaigns.id"))
+    status: Mapped[str] = mapped_column(String(40), default="completed")
+    mode: Mapped[str] = mapped_column(String(80), default="demo_ready")
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    recommendations: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    artifacts: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

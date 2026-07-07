@@ -64,6 +64,28 @@ GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account", "...": "..."}'
 
 Keep the service account JSON in `.env` or AWS SSM only. Do not commit it.
 
+Optional Growth Suite values:
+
+```bash
+DATAFORSEO_ENABLED=true
+DATAFORSEO_LOGIN=your-dataforseo-login
+DATAFORSEO_PASSWORD=your-dataforseo-password
+GOOGLE_ADS_ENABLED=true
+GOOGLE_ADS_DEVELOPER_TOKEN=your-google-ads-developer-token
+GOOGLE_ADS_CLIENT_ID=your-web-oauth-client-id
+GOOGLE_ADS_CLIENT_SECRET=your-web-oauth-client-secret
+GOOGLE_ADS_REFRESH_TOKEN=your-production-refresh-token
+GOOGLE_ADS_LOGIN_CUSTOMER_ID=8491293027
+GOOGLE_ADS_CUSTOMER_ID=8491293027
+GOOGLE_ADS_API_VERSION=v23
+```
+
+Full Growth Suite setup:
+
+```text
+docs/GROWTH_SUITE_AGENTS.md
+```
+
 If `DATABASE_URL` is blank, the app falls back to SQLite:
 
 ```text

@@ -133,3 +133,29 @@ Primary route:
 ```text
 POST /api/runs
 ```
+
+## Growth Suite Agents
+
+File: `app/agents/growth_suite.py`
+
+These agents extend the original loop into a client-ready SEO and growth automation package:
+
+- AI Search Visibility Agent
+- Backlink / Authority Agent
+- Auto Refresh + Approval Agent
+- Paid Campaign Agent
+- Client Reporting Agent
+- Client Workspace / Access Control Agent
+
+Primary routes:
+
+```text
+GET /api/growth/overview
+POST /api/growth/sync
+```
+
+Full setup, AWS variables, and demo flow:
+
+```text
+docs/GROWTH_SUITE_AGENTS.md
+```

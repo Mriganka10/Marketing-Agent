@@ -27,6 +27,17 @@ class Settings(BaseSettings):
     ga4_property_id: str | None = None
     google_search_console_site_url: str | None = None
     google_service_account_json: str | None = None
+    dataforseo_enabled: bool = False
+    dataforseo_login: str | None = None
+    dataforseo_password: str | None = None
+    google_ads_enabled: bool = False
+    google_ads_developer_token: str | None = None
+    google_ads_client_id: str | None = None
+    google_ads_client_secret: str | None = None
+    google_ads_refresh_token: str | None = None
+    google_ads_login_customer_id: str | None = None
+    google_ads_customer_id: str | None = None
+    google_ads_api_version: str = "v23"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -47,6 +58,20 @@ class Settings(BaseSettings):
     @property
     def can_use_openai(self) -> bool:
         return self.openai_enabled and bool(self.openai_api_key)
+
+    @property
+    def can_use_dataforseo(self) -> bool:
+        return self.dataforseo_enabled and bool(self.dataforseo_login and self.dataforseo_password)
+
+    @property
+    def can_use_google_ads(self) -> bool:
+        return self.google_ads_enabled and bool(
+            self.google_ads_developer_token
+            and self.google_ads_client_id
+            and self.google_ads_client_secret
+            and self.google_ads_refresh_token
+            and self.google_ads_customer_id
+        )
 
 
 @lru_cache

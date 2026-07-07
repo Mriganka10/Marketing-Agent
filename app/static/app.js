@@ -1,6 +1,6 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, seoBusiness: "all" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, seoBusiness: "all" };
 const $ = (selector) => document.querySelector(selector);
-const routes = new Set(["overview", "launch", "seo", "pages", "activity"]);
+const routes = new Set(["overview", "growth", "launch", "seo", "pages", "activity"]);
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -81,7 +81,8 @@ function setRoute() {
 
 async function loadHealth() {
   const health = await api("/health");
-  $("#health").textContent = health.openai_configured ? "OpenAI ready" : "Deterministic mode";
+  const liveCount = [health.openai_configured, health.dataforseo_configured, health.google_ads_configured].filter(Boolean).length;
+  $("#health").textContent = liveCount ? `${liveCount}/3 live integrations` : "Deterministic mode";
 }
 
 async function loadBusinesses() {
@@ -119,6 +120,15 @@ async function loadSeoOverview() {
   renderSeoBusinessFilter(state.seo.page_scores);
   renderSeoPages(filteredSeoPages());
   renderSeoQueries(state.seo.top_queries);
+}
+
+async function loadGrowthOverview() {
+  state.growth = await api("/api/growth/overview");
+  renderGrowthReadiness(state.growth.readiness, state.growth.mode);
+  renderGrowthAgents(state.growth.agents);
+  renderWorkspaces(state.growth.client_workspaces);
+  renderReportingSnapshot(state.growth.reporting);
+  renderGrowthOrchestration(state.growth.orchestration);
 }
 
 async function loadPages() {
@@ -231,6 +241,119 @@ function renderSeoReadiness(status) {
   `;
 }
 
+function renderGrowthReadiness(readiness, mode) {
+  const seoMode = readiness.seo?.mode || "checking";
+  const dataforseoMode = readiness.dataforseo?.mode || "ready_for_credentials";
+  const googleAdsMode = readiness.google_ads?.mode || "ready_for_google_ads_credentials";
+  const items = [
+    { label: "OpenAI visibility", complete: readiness.openai?.configured, value: readiness.openai?.model || "not configured" },
+    { label: "DataForSEO authority", complete: readiness.dataforseo?.configured, value: dataforseoMode },
+    { label: "Google Ads API", complete: readiness.google_ads?.configured, value: googleAdsMode },
+    { label: "GA4 + Search Console", complete: seoMode.includes("live") || seoMode.includes("configured"), value: seoMode },
+  ];
+  $("#growth-readiness").innerHTML = `
+    <div class="readiness-title">
+      <span>Suite mode</span>
+      <strong>${escapeHtml(mode.replaceAll("_", " "))}</strong>
+    </div>
+    <div class="integration-tiles">
+      ${items.map((item) => `
+        <article class="${item.complete ? "ready" : "pending"}">
+          <span>${item.complete ? "Ready" : "Pending"}</span>
+          <strong>${escapeHtml(item.label)}</strong>
+          <small>${escapeHtml(String(item.value).replaceAll("_", " "))}</small>
+        </article>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderGrowthAgents(agents) {
+  $("#growth-agent-grid").innerHTML = agents.map((agent, index) => {
+    const metricEntries = Object.entries(agent.metrics || {})
+      .filter(([, value]) => value !== null && value !== undefined && value !== "")
+      .slice(0, 4);
+    return `
+      <article class="growth-agent-card">
+        <div class="agent-card-top">
+          <span class="agent-number">${String(index + 1).padStart(2, "0")}</span>
+          <span class="agent-status ${escapeHtml(agent.status)}">${escapeHtml(agent.status.replaceAll("_", " "))}</span>
+        </div>
+        <h3>${escapeHtml(agent.name)}</h3>
+        <p>${escapeHtml(agent.summary)}</p>
+        <div class="agent-metrics">
+          ${metricEntries.map(([key, value]) => `
+            <span>
+              <small>${escapeHtml(key.replaceAll("_", " "))}</small>
+              <strong>${escapeHtml(formatMetricValue(value))}</strong>
+            </span>
+          `).join("")}
+        </div>
+        <div class="agent-recs">
+          ${(agent.recommendations || []).slice(0, 2).map((rec) => `
+            <div>
+              <strong>${escapeHtml(rec.title || "Recommendation")}</strong>
+              <span>${escapeHtml(rec.impact || "")}</span>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function formatMetricValue(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  return String(value);
+}
+
+function renderWorkspaces(workspaces) {
+  $("#workspace-list").innerHTML = workspaces.length ? workspaces.map((workspace) => `
+    <article class="workspace-row">
+      <div>
+        <strong>${escapeHtml(workspace.name)}</strong>
+        <span>${escapeHtml(workspace.industry)} · ${workspace.campaigns} campaigns · ${workspace.pages} pages · ${workspace.leads} leads</span>
+      </div>
+      <a href="#seo" class="button-link subtle">Open metrics</a>
+    </article>
+  `).join("") : `<p class="empty">Create a business to generate its client workspace.</p>`;
+}
+
+function renderReportingSnapshot(reporting) {
+  const entries = [
+    ["Clients", reporting.client_count],
+    ["Campaigns", reporting.campaign_count],
+    ["Published pages", reporting.published_pages],
+    ["Leads", reporting.lead_count],
+    ["Avg. page health", reporting.average_page_health],
+  ];
+  $("#reporting-snapshot").innerHTML = `
+    <h3>${escapeHtml(reporting.headline || "Client report")}</h3>
+    <p>${escapeHtml(reporting.next_board_action || "")}</p>
+    <div>
+      ${entries.map(([label, value]) => `
+        <span><small>${escapeHtml(label)}</small><strong>${escapeHtml(formatMetricValue(value || 0))}</strong></span>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderGrowthOrchestration(items) {
+  $("#growth-orchestration").innerHTML = items.map((item) => `
+    <article>
+      <span>${String(item.step).padStart(2, "0")}</span>
+      <div>
+        <strong>${escapeHtml(item.agent)}</strong>
+        <p>${escapeHtml(item.summary)}</p>
+      </div>
+      <em>${escapeHtml(item.status.replaceAll("_", " "))}</em>
+    </article>
+  `).join("");
+}
+
 async function loadLeads() {
   state.leads = await api("/api/leads");
   renderLeadsTable(state.leads);
@@ -268,7 +391,7 @@ function renderAuditTable(items) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview()]);
+  await Promise.all([loadBusinesses(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGrowthOverview()]);
 }
 
 $("#business-form").addEventListener("submit", async (event) => {
@@ -326,6 +449,13 @@ $("#sync-seo").addEventListener("click", async () => {
     await refreshAll();
   });
   toast("SEO metrics synced");
+});
+$("#sync-growth").addEventListener("click", async () => {
+  await withProcessing("Running growth suite", "AI visibility, authority, paid campaign readiness, reporting, workspaces, and refresh approvals are being coordinated.", async () => {
+    await api("/api/growth/sync", { method: "POST", body: JSON.stringify({}) });
+    await refreshAll();
+  });
+  toast("Growth suite synced");
 });
 $("#seo-business-filter").addEventListener("change", (event) => {
   state.seoBusiness = event.target.value;

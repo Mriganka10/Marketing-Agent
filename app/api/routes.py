@@ -14,6 +14,7 @@ from app.agents.business_memory import BusinessMemoryAgent
 from app.agents.content import ContentPageCreationAgent
 from app.agents.lead_capture import LeadCaptureAgent
 from app.agents.llm import LLMService
+from app.agents.growth_suite import GrowthSuiteAgent
 from app.agents.orchestrator import MarketingOrchestrator
 from app.agents.research import ResearchAgent
 from app.agents.seo_analytics import SeoAnalyticsAgent
@@ -28,7 +29,6 @@ from app.models.entities import (
     Campaign,
     LandingPage,
     Lead,
-    PageEvent,
     RefreshRecommendation,
 )
 from app.models.schemas import (
@@ -44,6 +44,7 @@ from app.models.schemas import (
     RecommendationRead,
     RunRequest,
     RunSummary,
+    GrowthSuiteOverview,
     SeoOverview,
 )
 
@@ -80,6 +81,8 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
         "service": settings.app_name,
         "environment": settings.environment,
         "openai_configured": settings.can_use_openai,
+        "dataforseo_configured": settings.can_use_dataforseo,
+        "google_ads_configured": settings.can_use_google_ads,
     }
 
 
@@ -264,6 +267,28 @@ def sync_seo_metrics(
     return SeoAnalyticsAgent().sync_metrics(db, settings)
 
 
+@router.get("/api/growth/overview", response_model=GrowthSuiteOverview)
+def growth_overview(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    llm: LLMService = Depends(get_llm),
+) -> GrowthSuiteOverview:
+    return GrowthSuiteAgent(llm).overview(db, settings)
+
+
+@router.post(
+    "/api/growth/sync",
+    response_model=GrowthSuiteOverview,
+    dependencies=[Depends(require_api_key)],
+)
+def sync_growth_agents(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    llm: LLMService = Depends(get_llm),
+) -> GrowthSuiteOverview:
+    return GrowthSuiteAgent(llm).overview(db, settings, persist=True)
+
+
 @router.get("/api/audit")
 def list_audit(db: Session = Depends(get_db)) -> list[dict[str, object]]:
     events = db.query(AuditEvent).order_by(AuditEvent.created_at.desc()).limit(100).all()
@@ -409,7 +434,7 @@ def public_landing_page(
   <meta property="og:description" content="{description}" />
   <meta property="og:url" content="{canonical}" />
   <meta property="og:type" content="website" />
-  <link rel="stylesheet" href="/static/styles.css?v=brand-theme-20260706-1" />
+  <link rel="stylesheet" href="/static/styles.css?v=growth-suite-20260707-1" />
   <style>{theme_style}</style>
   <script type="application/ld+json">{json.dumps(schema)}</script>
   {ga4_script}
@@ -437,7 +462,7 @@ def public_landing_page(
     </section>
     <div class="public-sections">{sections}</div>
   </main>
-  <script src="/static/public.js?v=brand-theme-20260706-1"></script>
+  <script src="/static/public.js?v=growth-suite-20260707-1"></script>
 </body>
 </html>"""
 

@@ -226,6 +226,17 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
     ga4_property_id = get_optional_secure(f"{SSM_PATH}/ga4-property-id")
     search_console_site_url = get_optional_secure(f"{SSM_PATH}/google-search-console-site-url")
     google_service_account_json = get_optional_secure(f"{SSM_PATH}/google-service-account-json")
+    dataforseo_enabled = get_optional_secure(f"{SSM_PATH}/dataforseo-enabled", "false")
+    dataforseo_login = get_optional_secure(f"{SSM_PATH}/dataforseo-login")
+    dataforseo_password = get_optional_secure(f"{SSM_PATH}/dataforseo-password")
+    google_ads_enabled = get_optional_secure(f"{SSM_PATH}/google-ads-enabled", "false")
+    google_ads_developer_token = get_optional_secure(f"{SSM_PATH}/google-ads-developer-token")
+    google_ads_client_id = get_optional_secure(f"{SSM_PATH}/google-ads-client-id")
+    google_ads_client_secret = get_optional_secure(f"{SSM_PATH}/google-ads-client-secret")
+    google_ads_refresh_token = get_optional_secure(f"{SSM_PATH}/google-ads-refresh-token")
+    google_ads_login_customer_id = get_optional_secure(f"{SSM_PATH}/google-ads-login-customer-id")
+    google_ads_customer_id = get_optional_secure(f"{SSM_PATH}/google-ads-customer-id")
+    google_ads_api_version = get_optional_secure(f"{SSM_PATH}/google-ads-api-version", "v23")
     secret_key = get_secure(f"{SSM_PATH}/secret-key")
     app_s3_bucket = get_secure(f"{SSM_PATH}/s3-bucket")
     env = {
@@ -245,6 +256,17 @@ def option_settings(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> list[dic
         "GA4_PROPERTY_ID": ga4_property_id,
         "GOOGLE_SEARCH_CONSOLE_SITE_URL": search_console_site_url,
         "GOOGLE_SERVICE_ACCOUNT_JSON": google_service_account_json,
+        "DATAFORSEO_ENABLED": dataforseo_enabled,
+        "DATAFORSEO_LOGIN": dataforseo_login,
+        "DATAFORSEO_PASSWORD": dataforseo_password,
+        "GOOGLE_ADS_ENABLED": google_ads_enabled,
+        "GOOGLE_ADS_DEVELOPER_TOKEN": google_ads_developer_token,
+        "GOOGLE_ADS_CLIENT_ID": google_ads_client_id,
+        "GOOGLE_ADS_CLIENT_SECRET": google_ads_client_secret,
+        "GOOGLE_ADS_REFRESH_TOKEN": google_ads_refresh_token,
+        "GOOGLE_ADS_LOGIN_CUSTOMER_ID": google_ads_login_customer_id,
+        "GOOGLE_ADS_CUSTOMER_ID": google_ads_customer_id,
+        "GOOGLE_ADS_API_VERSION": google_ads_api_version,
         "ALLOWED_ORIGINS": '["*"]',
         "S3_BUCKET": app_s3_bucket,
         "AWS_REGION": REGION,

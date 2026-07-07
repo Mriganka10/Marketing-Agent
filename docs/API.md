@@ -169,3 +169,26 @@ live_google_integrated
 - recommendation.
 
 `POST /api/seo/sync` pulls Google Search Console and GA4 metrics into the database.
+
+## Growth Suite
+
+```http
+GET /api/growth/overview
+POST /api/growth/sync
+```
+
+`GET /api/growth/overview` returns:
+
+- six agent cards,
+- OpenAI/DataForSEO/Google Ads/SEO readiness,
+- client workspaces partitioned by business,
+- executive reporting snapshot,
+- orchestration steps.
+
+`POST /api/growth/sync` runs and persists the suite into `growth_agent_executions` and writes an audit event.
+
+See:
+
+```text
+docs/GROWTH_SUITE_AGENTS.md
+```

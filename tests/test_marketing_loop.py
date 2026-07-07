@@ -415,3 +415,52 @@ def test_content_agent_stores_business_specific_brand_theme(client):
 
     assert run["pages"][0]["seo"]["brand_theme"]["accent"] == "#008080"
     assert "kairozcorporation.com" in run["pages"][0]["seo"]["brand_theme"]["logo_url"]
+
+
+def test_growth_suite_overview_and_sync(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Agentic Growth Labs",
+            "website": "https://agenticgrowthlabs.com",
+            "industry": "SEO and marketing automation",
+            "audience": "Marketing teams replacing manual SEO operations",
+            "value_proposition": "We automate content, search analytics, authority, and paid campaign readiness.",
+            "offers": ["SEO automation", "DataForSEO authority checks", "Google Ads readiness"],
+            "competitors": ["Gushwork", "Clay"],
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Full growth suite",
+            "goal": "Generate qualified marketing automation leads.",
+            "target_region": "India",
+        },
+    ).json()["id"]
+    client.post("/api/runs", json={"campaign_id": campaign_id, "publish_pages": True})
+    client.post("/api/seo/sync")
+
+    overview = client.get("/api/growth/overview")
+    assert overview.status_code == 200
+    payload = overview.json()
+    assert payload["mode"] in {"demo_ready", "hybrid_live_ready", "production_integrated"}
+    assert len(payload["agents"]) == 6
+    assert {agent["key"] for agent in payload["agents"]} == {
+        "ai_search_visibility",
+        "backlink_authority",
+        "auto_refresh_approval",
+        "paid_campaigns",
+        "client_reporting",
+        "client_workspace_access",
+    }
+    assert payload["client_workspaces"][0]["name"] == "Agentic Growth Labs"
+    assert payload["readiness"]["google_ads"]["developer_token"] is False
+
+    sync = client.post("/api/growth/sync")
+    assert sync.status_code == 200
+    assert len(sync.json()["orchestration"]) == 6
+
+    audit = client.get("/api/audit").json()
+    assert any(event["action"] == "growth_suite_synced" for event in audit)

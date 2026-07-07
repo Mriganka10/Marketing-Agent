@@ -556,6 +556,68 @@ Business interpretation:
 
 The app, SEO dashboard, and Google integration layer are healthy enough for demo or operational testing.
 
+## Test Case 14: Run Growth Suite Agents
+
+Business value:
+
+Shows the client that the product is no longer only a landing-page generator. It is a broader growth operating system covering AI visibility, authority, paid campaigns, reporting, and workspace governance.
+
+Steps:
+
+1. Open `https://agenticgrowthlabs.com`.
+2. Go to `Growth Suite`.
+3. Review the integration readiness board.
+4. Click `Run growth suite`.
+5. Wait for the processing overlay to complete.
+6. Confirm six agent cards are visible:
+   - AI Search Visibility Agent
+   - Backlink / Authority Agent
+   - Auto Refresh + Approval Agent
+   - Paid Campaign Agent
+   - Client Reporting Agent
+   - Client Workspace / Access Control Agent
+7. Review client workspaces and the executive report snapshot.
+8. Go to `Activity` and confirm a `growth_suite_synced` audit event exists.
+
+Expected result:
+
+- The Growth Suite page stays aligned on desktop and mobile.
+- Each agent card shows status, mode, metrics, and recommendations.
+- Missing DataForSEO or Google Ads credentials show as pending rather than breaking the demo.
+- Client workspace cards are grouped by company/business.
+
+Business interpretation:
+
+The suite demonstrates a full agency replacement workflow: visibility analysis, authority planning, page refresh planning, paid campaign readiness, client reporting, and controlled client-specific workspaces.
+
+## Test Case 15: Validate Third-Party Credential Readiness
+
+Business value:
+
+Confirms which parts are live and which parts are waiting on external approval or credentials before promising client outcomes.
+
+Steps:
+
+1. Open `Growth Suite`.
+2. Check the readiness board.
+3. Confirm OpenAI shows ready when `OPENAI_API_KEY` is configured.
+4. Confirm DataForSEO shows ready after `DATAFORSEO_ENABLED`, login, and password are added.
+5. Confirm Google Ads shows ready after developer token, OAuth client, refresh token, and customer IDs are added.
+6. Confirm Google Ads may still return pending/fallback while Google Basic Access review is pending.
+
+Expected result:
+
+```text
+OpenAI visibility: Ready
+DataForSEO authority: Ready after API credentials and account balance
+Google Ads API: Ready after credentials, but campaign reads may wait for Google access approval
+GA4 + Search Console: Ready after service account access and sync
+```
+
+Business interpretation:
+
+This prevents over-claiming. The platform can demo the complete workflow immediately, while live external data depends on the third-party access status.
+
 ## End-To-End Acceptance Criteria
 
 The full test is successful when:
@@ -570,6 +632,9 @@ The full test is successful when:
 - Search Console can inspect the page,
 - SEO dashboard syncs in `live_google_integrated` mode,
 - company filter narrows page performance cards,
+- Growth Suite runs all six additional agents,
+- readiness cards clearly show OpenAI, DataForSEO, Google Ads, GA4, and Search Console status,
+- client workspaces separate metrics by business,
 - recommendations explain what to improve next.
 
 ## Known Timing Expectations
