@@ -1,0 +1,207 @@
+# Owner System Manual
+
+This is the master owner guide for the Marketing Agent system running at:
+
+```text
+https://agenticgrowthlabs.com
+```
+
+Use this document as the starting point whenever you need to understand what the system is, where it is hosted, what agents exist, which external platforms are connected, and what to check before a client demo.
+
+## Current Production Status
+
+Production branch:
+
+```text
+release_branch
+```
+
+Production domain:
+
+```text
+https://agenticgrowthlabs.com
+```
+
+AWS Elastic Beanstalk environment:
+
+```text
+marketing-agent-eb-prod
+```
+
+AWS region:
+
+```text
+ap-south-1
+```
+
+Runtime:
+
+```text
+Docker on 64bit Amazon Linux 2023
+```
+
+Current application purpose:
+
+```text
+Understand a business -> find demand -> create SEO pages -> capture leads -> measure performance -> recommend improvements -> report client outcomes.
+```
+
+## What The System Is
+
+Marketing Agent is a production web application for AI-assisted marketing operations. It combines a dashboard, public landing pages, lead capture, SEO analytics, Google Search Console, GA4, DataForSEO, Google Ads readiness, and multiple internal agents.
+
+It is not only a chatbot. It is an app with:
+
+- a web UI,
+- backend APIs,
+- database tables,
+- public SEO pages,
+- integrations,
+- audit logs,
+- agent orchestration,
+- deployment automation,
+- operational documents.
+
+## Main User Personas
+
+Owner:
+
+- configures AWS, Google, OpenAI, DataForSEO, and Google Ads;
+- deploys the application;
+- reviews client demos;
+- owns keys, billing, data, and operational responsibility.
+
+Internal operator:
+
+- creates business profiles;
+- launches campaigns;
+- reviews generated pages;
+- syncs SEO metrics;
+- checks leads and recommendations.
+
+Client viewer:
+
+- eventually views only their company pages, metrics, leads, and reports.
+- Current implementation provides company-separated views in the Growth Suite; full login-based role access should be added before giving direct access to external clients.
+
+Website visitor:
+
+- lands on generated public pages;
+- triggers analytics events;
+- submits a lead form.
+
+## Main Screens
+
+Overview:
+
+- executive dashboard;
+- business, campaign, page, lead, visit, and conversion totals;
+- agent readiness;
+- recent activity.
+
+Launch:
+
+- Business Memory form;
+- campaign setup;
+- launch agent loop;
+- processing state while agents run.
+
+SEO Analytics:
+
+- Google Search Console and GA4 readiness;
+- page health scores;
+- impressions, clicks, CTR, average position, sessions, leads, conversion rate;
+- company filter for client-specific performance;
+- refresh recommendations.
+
+Growth Suite:
+
+- six advanced growth agents;
+- integration readiness board;
+- client workspaces;
+- orchestration flow;
+- executive reporting snapshot.
+
+Pages:
+
+- generated landing pages;
+- page URLs;
+- status;
+- public page opening.
+
+Activity:
+
+- leads;
+- governance/audit activity.
+
+## Production Integrations
+
+OpenAI:
+
+- used for AI reasoning, research, content generation, and AI search visibility analysis;
+- configured with `OPENAI_MODEL=gpt-5.5`.
+
+Google Search Console:
+
+- domain property: `sc-domain:agenticgrowthlabs.com`;
+- used to collect Google search impressions, clicks, CTR, average position, query data, and page visibility signals.
+
+GA4:
+
+- property ID: `544328945`;
+- measurement ID: `G-KZ3N4G2S20`;
+- used for browser events, page sessions, engagement, and conversion analytics.
+
+Google Cloud:
+
+- project: `innate-beacon-433717-d2`;
+- service account used for Search Console and GA4 Data API reads.
+
+Google Ads:
+
+- manager account ID: `849-129-3027`;
+- OAuth and developer token configured;
+- API readiness is available in the app;
+- actual API access may still depend on Google Ads Basic Access approval.
+
+DataForSEO:
+
+- used by the Backlink / Authority Agent;
+- requires active account balance.
+
+AWS:
+
+- hosts the production application and database infrastructure;
+- stores environment configuration through Elastic Beanstalk environment variables and/or SSM Parameter Store.
+
+## Owner Responsibilities
+
+Keep these items safe:
+
+- OpenAI API key;
+- Google service account JSON;
+- Google Ads developer token;
+- Google Ads OAuth client secret;
+- Google Ads refresh token;
+- DataForSEO API password;
+- AWS credentials;
+- database password;
+- app `SECRET_KEY`.
+
+Do not commit secrets to git.
+
+Rotate secrets if they were shown in screenshots, documents, chats, or shared files.
+
+## Documents To Read Next
+
+Read these in order:
+
+1. `docs/ARCHITECTURE_DEEP_DIVE.md`
+2. `docs/FUNCTIONALITY_WALKTHROUGH.md`
+3. `docs/AGENT_CATALOG_DETAILED.md`
+4. `docs/DATABASE_TABLES_AND_QUERIES.md`
+5. `docs/GOOGLE_PLATFORMS_SETUP_HISTORY.md`
+6. `docs/AWS_ENVIRONMENT_AND_SECRETS.md`
+7. `docs/END_TO_END_TEST_CASES.md`
+8. `docs/OPERATIONS_RUNBOOK.md`
+

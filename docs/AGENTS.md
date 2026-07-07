@@ -1,5 +1,11 @@
 # Agents
 
+For the detailed owner catalog of every agent, including inputs, outputs, database writes, and external services, read:
+
+```text
+docs/AGENT_CATALOG_DETAILED.md
+```
+
 ## Agent Loop
 
 The product loop is:

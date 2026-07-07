@@ -1,5 +1,11 @@
 # Architecture
 
+For the full owner-grade architecture, read:
+
+```text
+docs/ARCHITECTURE_DEEP_DIVE.md
+```
+
 ## High-Level Design
 
 Marketing Agent is a single FastAPI service that serves both API endpoints and the static dashboard UI.

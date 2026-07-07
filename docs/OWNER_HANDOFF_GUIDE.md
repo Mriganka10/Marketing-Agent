@@ -2,11 +2,17 @@
 
 ## What You Have
 
-Marketing Agent is a working FastAPI application with a professional dashboard and a five-agent marketing workflow.
+Marketing Agent is a working FastAPI application with a professional dashboard, public landing pages, SEO analytics, Growth Suite agents, Google integrations, DataForSEO readiness, Google Ads readiness, and AWS production deployment.
 
 Core loop:
 
-Understand business -> find demand -> create pages -> capture leads -> improve pages.
+Understand business -> find demand -> create pages -> capture leads -> measure SEO/analytics -> refresh pages -> report client outcomes.
+
+Start with the full owner manual:
+
+```text
+docs/OWNER_SYSTEM_MANUAL.md
+```
 
 ## Where the Code Lives
 
@@ -103,6 +109,13 @@ Recommended production deployment:
 
 ## Files to Know
 
+- `docs/OWNER_SYSTEM_MANUAL.md`: Master system ownership guide.
+- `docs/ARCHITECTURE_DEEP_DIVE.md`: Full architecture from browser to AWS, database, agents, and Google platforms.
+- `docs/FUNCTIONALITY_WALKTHROUGH.md`: Feature-by-feature walkthrough from business save to Growth Suite reporting.
+- `docs/AGENT_CATALOG_DETAILED.md`: Every agent, purpose, inputs, outputs, and external dependencies.
+- `docs/DATABASE_TABLES_AND_QUERIES.md`: Database tables and owner SQL queries.
+- `docs/GOOGLE_PLATFORMS_SETUP_HISTORY.md`: Search Console, GA4, Google Cloud, OAuth, and Google Ads setup history.
+- `docs/AWS_ENVIRONMENT_AND_SECRETS.md`: AWS hosting, SSM/environment values, and secret management.
 - `app/main.py`: App startup.
 - `app/api/routes.py`: API and public pages.
 - `app/agents/`: Agent logic.
@@ -118,6 +131,18 @@ Recommended production deployment:
 - `docs/PRODUCTION_FUNCTIONAL_FLOW.md`: Current feature flow and production checks.
 - `docs/END_TO_END_TEST_CASES.md`: Manual test cases from business save through Google search and metrics review.
 - `docs/POSTGRES_QUERY_ARTIFACT.md`: PostgreSQL connection commands and SQL query artifact.
+
+## Hosting And Mobile Clarification
+
+The app is hosted on AWS, not Google servers.
+
+The app can be opened on mobile through a browser at:
+
+```text
+https://agenticgrowthlabs.com
+```
+
+It is not currently published on Google Play Store. A Play Store app would require separate Android/PWA packaging, store listing, signing, screenshots, privacy policy submission, and Google Play review.
 
 ## Immediate Recommendations
 

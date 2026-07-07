@@ -1,8 +1,8 @@
 # Marketing Agent
 
-A production-ready FastAPI prototype for an AI-powered multi-agent marketing loop:
+A production-ready FastAPI application for an AI-powered multi-agent marketing loop:
 
-Understand business -> find demand -> create pages -> capture leads -> improve pages.
+Understand business -> find demand -> create pages -> capture leads -> measure SEO/analytics -> refresh pages -> report client outcomes.
 
 ## Agents
 
@@ -11,6 +11,7 @@ Understand business -> find demand -> create pages -> capture leads -> improve p
 - Content/Page Creation Agent creates SEO landing pages from the strongest signals.
 - Lead Capture Agent scores and stores inbound leads from generated pages.
 - Analytics/Refresh Agent reviews page performance and creates refresh recommendations.
+- Growth Suite Agents cover AI visibility, backlink authority, paid campaign readiness, client reporting, and client workspace separation.
 
 OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep the app usable in local and CI environments.
 
@@ -57,6 +58,13 @@ See `docs/DEPLOYMENT_AWS.md` for Elastic Beanstalk, EC2/EBS, S3, and production 
 
 ## Documentation
 
+- `docs/OWNER_SYSTEM_MANUAL.md`
+- `docs/ARCHITECTURE_DEEP_DIVE.md`
+- `docs/FUNCTIONALITY_WALKTHROUGH.md`
+- `docs/AGENT_CATALOG_DETAILED.md`
+- `docs/DATABASE_TABLES_AND_QUERIES.md`
+- `docs/GOOGLE_PLATFORMS_SETUP_HISTORY.md`
+- `docs/AWS_ENVIRONMENT_AND_SECRETS.md`
 - `docs/PROJECT_BRIEF.md`
 - `docs/ARCHITECTURE.md`
 - `docs/AGENTS.md`
