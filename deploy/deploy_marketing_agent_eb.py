@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -346,8 +347,20 @@ def deploy_environment(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> dict:
         print(json.dumps({"status": env.get("Status"), "health": env.get("Health"), "url": env.get("CNAME")}, default=str))
         if env.get("Status") == "Ready" and env.get("Health") in {"Green", "Yellow", "Grey"}:
             return env
+        if env.get("Status") == "Ready" and application_health_ok():
+            return env
         time.sleep(30)
     raise RuntimeError("Elastic Beanstalk environment did not become ready in time")
+
+
+def application_health_ok() -> bool:
+    try:
+        with urllib.request.urlopen(f"{PUBLIC_BASE_URL}/health", timeout=10) as response:
+            status = response.status
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return False
+    return status == 200 and payload.get("status") == "ok"
 
 
 def main() -> None:
