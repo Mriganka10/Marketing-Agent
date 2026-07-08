@@ -1150,7 +1150,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .agent-metrics span {
   display: grid;
   gap: 5px;
-  min-height: 76px;
+  min-height: 94px;
   padding: 11px;
   border: 1px solid #e3eaee;
   border-radius: 8px;
@@ -1160,6 +1160,62 @@ tbody tr:last-child td { border-bottom: 0; }
 .agent-metrics strong {
   font-size: 1.18rem;
   overflow-wrap: anywhere;
+}
+
+.metric-source {
+  width: max-content;
+  max-width: 100%;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  align-self: end;
+  padding: 3px 7px;
+  border: 1px solid #dbe8e7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.metric-source.live {
+  border-color: #b7dfc1;
+  background: #eefaf1;
+  color: #0f7a3a;
+}
+
+.metric-source.db {
+  border-color: #bedbd9;
+  background: #eef8f7;
+  color: var(--accent-dark);
+}
+
+.metric-source.ai {
+  border-color: #c9d8ff;
+  background: #f0f5ff;
+  color: #315cc5;
+}
+
+.metric-source.fallback {
+  border-color: #eed6b1;
+  background: #fff8ec;
+  color: #a35a08;
+}
+
+.metric-source.pending {
+  border-color: #d9dfe8;
+  background: #f6f8fb;
+  color: #596779;
+}
+
+.metric-source.config {
+  border-color: #e1d8f4;
+  background: #f8f4ff;
+  color: #63469b;
 }
 
 .signal-board {

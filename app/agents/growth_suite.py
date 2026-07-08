@@ -103,6 +103,7 @@ class GrowthSuiteAgent:
             user=prompt,
             fallback=fallback,
         )
+        visibility_source = "AI estimate" if settings.can_use_openai else "Demo fallback"
         return GrowthAgentCard(
             key="ai_search_visibility",
             name="AI Search Visibility Agent",
@@ -114,6 +115,12 @@ class GrowthSuiteAgent:
                 "tracked_brands": len(brand_names),
                 "content_pages": len(pages),
                 "answer_surface": "OpenAI / ChatGPT",
+            },
+            metric_sources={
+                "visibility_score": visibility_source,
+                "tracked_brands": "App DB",
+                "content_pages": "App DB",
+                "answer_surface": "Configuration",
             },
             recommendations=self._recommendations(result.get("actions") or fallback["actions"]),
             artifacts={"gaps": result.get("gaps") or fallback["gaps"]},
@@ -144,6 +151,13 @@ class GrowthSuiteAgent:
                 "referring_domains": summary.referring_domains,
                 "authority_score": summary.authority_score,
                 "spam_score": summary.spam_score,
+            },
+            metric_sources={
+                "domain": "App DB",
+                "backlinks": "Demo fallback",
+                "referring_domains": "Demo fallback",
+                "authority_score": "Demo fallback",
+                "spam_score": "Demo fallback",
             },
             recommendations=[
                 {
@@ -177,6 +191,12 @@ class GrowthSuiteAgent:
                 "campaigns_monitored": len(campaigns),
                 "approval_policy": "human_review_required",
             },
+            metric_sources={
+                "pages_needing_refresh": self._seo_metric_source(seo),
+                "open_recommendations": "App DB",
+                "campaigns_monitored": "App DB",
+                "approval_policy": "Configuration",
+            },
             recommendations=[
                 {"title": page.title, "impact": page.next_action}
                 for page in weak_pages[:4]
@@ -188,9 +208,11 @@ class GrowthSuiteAgent:
     def _paid_campaigns(self, db: Session, campaigns: list[Campaign], google_ads: GoogleAdsClient) -> GrowthAgentCard:
         ads_error = None
         ads_campaigns = []
+        used_google_ads = False
         if google_ads.is_configured:
             try:
                 ads_campaigns = google_ads.fetch_campaigns()
+                used_google_ads = bool(ads_campaigns)
             except GoogleAdsError as exc:
                 ads_error = str(exc)
         if not ads_campaigns:
@@ -231,6 +253,16 @@ class GrowthSuiteAgent:
                 "draft_plans": draft_count,
                 "pushed_plans": pushed_count,
                 "error": ads_error,
+            },
+            metric_sources={
+                "campaigns": "Live Google Ads" if used_google_ads else "App DB fallback",
+                "impressions": "Live Google Ads" if used_google_ads else "Demo fallback",
+                "clicks": "Live Google Ads" if used_google_ads else "Demo fallback",
+                "cost": "Live Google Ads" if used_google_ads else "Demo fallback",
+                "conversions": "Live Google Ads" if used_google_ads else "Demo fallback",
+                "draft_plans": "App DB",
+                "pushed_plans": "App DB",
+                "error": "Google Ads API",
             },
             recommendations=[
                 {"title": "Map top organic pages to paid ad groups", "impact": "Use SEO winners as lower-risk ad themes."},
@@ -274,6 +306,14 @@ class GrowthSuiteAgent:
                 "sessions": seo.sessions,
                 "leads": len(leads),
             },
+            metric_sources={
+                "clients": "App DB",
+                "campaigns": "App DB",
+                "published_pages": "App DB",
+                "organic_clicks": self._seo_metric_source(seo),
+                "sessions": self._analytics_metric_source(seo),
+                "leads": "App DB",
+            },
             recommendations=[
                 {"title": "Send weekly page-health report", "impact": "Shows clients exactly what changed and why."},
                 {"title": "Highlight recommendations by business", "impact": "Keeps GreyRadius, Kairoz, and other clients separated."},
@@ -300,6 +340,12 @@ class GrowthSuiteAgent:
                 "governance_score": governance_score,
                 "roles": 3,
                 "data_partitioning": "business_id",
+            },
+            metric_sources={
+                "workspaces": "App DB",
+                "governance_score": "Rule-based score",
+                "roles": "Configuration",
+                "data_partitioning": "Configuration",
             },
             recommendations=[
                 {"title": "Use company filters for page performance", "impact": "Client demos stay clean and client-specific."},
@@ -383,6 +429,26 @@ class GrowthSuiteAgent:
         if live_count:
             return "hybrid_live_ready"
         return "demo_ready"
+
+    def _seo_metric_source(self, seo) -> str:
+        mode = str((seo.integration_status or {}).get("mode", ""))
+        if mode == "live_google_integrated":
+            return "Live Google Search Console"
+        if "configured" in mode:
+            return "Google configured; waiting data"
+        if "fallback" in mode:
+            return "Demo fallback"
+        return "First-party / demo"
+
+    def _analytics_metric_source(self, seo) -> str:
+        mode = str((seo.integration_status or {}).get("mode", ""))
+        if mode == "live_google_integrated":
+            return "Live GA4"
+        if "configured" in mode:
+            return "GA4 configured; waiting data"
+        if "fallback" in mode:
+            return "Demo fallback"
+        return "First-party / demo"
 
     def _recommendations(self, actions: list[object]) -> list[dict[str, str]]:
         return [{"title": str(action), "impact": "Improves discoverability in AI search journeys."} for action in actions[:4]]

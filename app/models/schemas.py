@@ -233,6 +233,7 @@ class GrowthAgentCard(BaseModel):
     mode: str
     summary: str
     metrics: dict[str, Any]
+    metric_sources: dict[str, str] = Field(default_factory=dict)
     recommendations: list[dict[str, Any]]
     artifacts: dict[str, Any] = {}
     updated_at: datetime | None = None

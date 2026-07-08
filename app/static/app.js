@@ -283,6 +283,7 @@ function renderGrowthReadiness(readiness, mode) {
 function renderGrowthAgents(agents) {
   $("#growth-agent-grid").innerHTML = agents.map((agent, index) => {
     const profile = agentProfile(agent.key || agent.name);
+    const sources = agent.metric_sources || {};
     const metricEntries = Object.entries(agent.metrics || {})
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
       .slice(0, 4);
@@ -291,7 +292,7 @@ function renderGrowthAgents(agents) {
         <div class="agent-card-top">
           <div class="agent-identity">
             <span class="agent-visual ${escapeHtml(profile.tone)}">
-              <img src="/static/marketing-agent-logo.svg?v=premium-agents-20260707-1" alt="" />
+              <img src="/static/marketing-agent-logo.svg?v=metric-sources-20260708-1" alt="" />
               <b>${escapeHtml(profile.initials)}</b>
             </span>
             <span class="agent-number">${String(index + 1).padStart(2, "0")}</span>
@@ -311,6 +312,9 @@ function renderGrowthAgents(agents) {
             <span>
               <small>${escapeHtml(key.replaceAll("_", " "))}</small>
               <strong>${escapeHtml(formatMetricValue(value))}</strong>
+              <em class="metric-source ${escapeHtml(sourceTone(sources[key]))}" title="${escapeHtml(sourceHelp(sources[key]))}">
+                ${escapeHtml(sources[key] || "Source pending")}
+              </em>
             </span>
           `).join("")}
         </div>
@@ -329,6 +333,30 @@ function renderGrowthAgents(agents) {
       </article>
     `;
   }).join("");
+}
+
+function sourceTone(source) {
+  const value = String(source || "").toLowerCase();
+  if (value.includes("live")) return "live";
+  if (value.includes("app db")) return "db";
+  if (value.includes("ai")) return "ai";
+  if (value.includes("fallback") || value.includes("demo")) return "fallback";
+  if (value.includes("configured") || value.includes("waiting")) return "pending";
+  return "config";
+}
+
+function sourceHelp(source) {
+  const value = String(source || "");
+  const normalized = value.toLowerCase();
+  if (normalized.includes("live google search console")) return "Real search performance from Google Search Console after sync.";
+  if (normalized.includes("live ga4")) return "Real page/session analytics from GA4 after sync.";
+  if (normalized.includes("live google ads")) return "Real campaign metrics returned by Google Ads API.";
+  if (normalized.includes("app db")) return "Count or value stored inside the Marketing Agent database.";
+  if (normalized.includes("ai estimate")) return "Calculated by the OpenAI-powered agent, not a direct Google metric.";
+  if (normalized.includes("fallback") || normalized.includes("demo")) return "Temporary deterministic value used until the live provider has usable data.";
+  if (normalized.includes("configured") || normalized.includes("waiting")) return "Credentials exist, but the provider has not returned usable page-level data yet.";
+  if (normalized.includes("configuration")) return "Static product or governance setting controlled by the app.";
+  return value || "Metric source has not been classified yet.";
 }
 
 function agentProfile(key) {

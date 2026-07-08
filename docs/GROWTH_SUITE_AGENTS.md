@@ -133,6 +133,12 @@ For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. 
 ## Production Notes
 
 - The Growth Suite is safe to demo without all third-party secrets. Missing integrations show as pending instead of breaking the page.
+- Every Growth Suite metric now carries a visible source label in the UI:
+  - `Live Google Search Console`, `Live GA4`, or `Live Google Ads` means the value came from a connected Google API sync.
+  - `App DB` means the value is a count or record from the Marketing Agent database, such as generated pages, businesses, leads, campaigns, or workspaces.
+  - `AI estimate` means the value was calculated by the OpenAI-powered agent and is not a direct Google metric.
+  - `Demo fallback` means the app is using deterministic placeholder logic until the live provider has usable data for that metric.
+  - `Configuration` means the value is a static app setting or governance rule.
 - Google Ads campaign reads, validation, and push may remain pending until Google approves the account/API access level.
 - Paid campaign push is intentionally approval-gated and creates paused Google Ads resources by default.
 - Refresh recommendations are intentionally approval-based. Fully automatic publishing can be enabled later once clients approve governance rules.

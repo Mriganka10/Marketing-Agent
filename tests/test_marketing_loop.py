@@ -455,6 +455,10 @@ def test_growth_suite_overview_and_sync(client):
         "client_reporting",
         "client_workspace_access",
     }
+    ai_agent = next(agent for agent in payload["agents"] if agent["key"] == "ai_search_visibility")
+    backlink_agent = next(agent for agent in payload["agents"] if agent["key"] == "backlink_authority")
+    assert ai_agent["metric_sources"]["content_pages"] == "App DB"
+    assert backlink_agent["metric_sources"]["backlinks"] == "Demo fallback"
     assert payload["client_workspaces"][0]["name"] == "Agentic Growth Labs"
     assert payload["readiness"]["google_ads"]["developer_token"] is False
 
