@@ -290,6 +290,7 @@ Purpose:
 External services:
 
 - DataForSEO.
+- Live backlink metrics use the DataForSEO Backlinks Summary API.
 
 Inputs:
 
@@ -304,6 +305,7 @@ Output:
 - referring domains;
 - authority score;
 - spam score;
+- metric source labels showing `Live DataForSEO` or `Demo fallback`.
 - keyword opportunities;
 - priority scores.
 

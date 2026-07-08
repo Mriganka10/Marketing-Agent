@@ -12,8 +12,8 @@ The new Growth Suite adds the client package layer around that loop:
    - Current production scope is OpenAI/ChatGPT only; Perplexity, Gemini, and other answer engines remain future scope.
 
 2. Backlink / Authority Agent
-   - Uses DataForSEO-ready credentials to show authority, referring-domain, backlink, and keyword opportunity signals.
-   - Keeps a deterministic fallback so client demos still work if DataForSEO balance or access is not ready.
+   - Uses DataForSEO credentials to call the live Backlinks Summary API for domain authority, referring-domain, backlink, and spam-score signals.
+   - Keeps a deterministic fallback so client demos still work if DataForSEO balance, permissions, or endpoint access is not ready.
    - Helps decide which pages need external authority support, not just on-page editing.
 
 3. Auto Refresh + Approval Agent
@@ -78,6 +78,14 @@ Required for DataForSEO:
 - `DATAFORSEO_LOGIN=<DataForSEO API login>`
 - `DATAFORSEO_PASSWORD=<DataForSEO API password>`
 
+Live DataForSEO behavior:
+
+- The app first checks account readiness through DataForSEO user data.
+- The Backlink / Authority Agent then calls `POST /v3/backlinks/summary/live` for the selected business domain.
+- If the backlinks endpoint returns valid data, backlink metrics are labeled `Live DataForSEO`.
+- If the account is configured but the endpoint returns an authorization, balance, or data error, the card remains available and the affected metrics are labeled `Demo fallback`.
+- The public readiness response is sanitized and does not expose the DataForSEO API login or password.
+
 SSM parameter names:
 
 ```text
@@ -135,6 +143,7 @@ For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. 
 - The Growth Suite is safe to demo without all third-party secrets. Missing integrations show as pending instead of breaking the page.
 - Every Growth Suite metric now carries a visible source label in the UI:
   - `Live Google Search Console`, `Live GA4`, or `Live Google Ads` means the value came from a connected Google API sync.
+  - `Live DataForSEO` means the value came from the DataForSEO Backlinks Summary API.
   - `App DB` means the value is a count or record from the Marketing Agent database, such as generated pages, businesses, leads, campaigns, or workspaces.
   - `AI estimate` means the value was calculated by the OpenAI-powered agent and is not a direct Google metric.
   - `Demo fallback` means the app is using deterministic placeholder logic until the live provider has usable data for that metric.

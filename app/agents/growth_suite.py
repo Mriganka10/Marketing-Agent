@@ -154,10 +154,10 @@ class GrowthSuiteAgent:
             },
             metric_sources={
                 "domain": "App DB",
-                "backlinks": "Demo fallback",
-                "referring_domains": "Demo fallback",
-                "authority_score": "Demo fallback",
-                "spam_score": "Demo fallback",
+                "backlinks": summary.source,
+                "referring_domains": summary.source,
+                "authority_score": summary.source,
+                "spam_score": summary.source,
             },
             recommendations=[
                 {
@@ -166,7 +166,10 @@ class GrowthSuiteAgent:
                 }
                 for item in opportunities[:3]
             ],
-            artifacts={"keyword_opportunities": opportunities},
+            artifacts={
+                "keyword_opportunities": opportunities,
+                "dataforseo_error": summary.error,
+            },
         )
 
     def _auto_refresh_approval(

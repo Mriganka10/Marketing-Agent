@@ -99,6 +99,13 @@ DATAFORSEO_LOGIN=<secret>
 DATAFORSEO_PASSWORD=<secret>
 ```
 
+These values enable two checks:
+
+- account readiness through DataForSEO user data;
+- live Backlink / Authority Agent metrics through the DataForSEO Backlinks Summary API.
+
+If account readiness is green but backlink metrics still show `Demo fallback`, the credentials are present but the backlinks endpoint is returning an authorization, balance, or data-access error. In that case, verify the DataForSEO account balance and API access, then run the Growth Suite again.
+
 ## Google Ads Values
 
 ```text
