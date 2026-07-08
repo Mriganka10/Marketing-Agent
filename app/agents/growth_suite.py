@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from statistics import mean
+from urllib.parse import urlparse
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -28,18 +29,26 @@ class GrowthSuiteAgent:
         self.llm = llm
         self.seo_agent = SeoAnalyticsAgent()
 
-    def overview(self, db: Session, settings: Settings, *, persist: bool = False) -> GrowthSuiteOverview:
+    def overview(
+        self,
+        db: Session,
+        settings: Settings,
+        *,
+        persist: bool = False,
+        business_id: str | None = None,
+    ) -> GrowthSuiteOverview:
         businesses = db.query(BusinessProfile).order_by(BusinessProfile.created_at.desc()).all()
         campaigns = db.query(Campaign).order_by(Campaign.created_at.desc()).all()
         pages = db.query(LandingPage).order_by(LandingPage.created_at.desc()).all()
         leads = db.query(Lead).order_by(Lead.created_at.desc()).all()
+        selected_business = self._select_business(businesses, business_id)
         seo = self.seo_agent.overview(db, settings)
         dataforseo = DataForSEOClient(settings)
         google_ads = GoogleAdsClient(settings)
 
         agents = [
             self._ai_search_visibility(businesses, pages, settings),
-            self._backlink_authority(businesses, campaigns, dataforseo),
+            self._backlink_authority(selected_business, campaigns, dataforseo),
             self._auto_refresh_approval(db, campaigns, seo),
             self._paid_campaigns(db, campaigns, google_ads),
             self._client_reporting(businesses, campaigns, pages, leads, seo),
@@ -70,6 +79,7 @@ class GrowthSuiteAgent:
                 "google_ads": google_ads.readiness(),
                 "seo": seo.integration_status,
             },
+            selected_business=self._selected_business_payload(selected_business),
             agents=agents,
             client_workspaces=self._client_workspaces(businesses, campaigns, pages, leads),
             orchestration=self._orchestration(agents),
@@ -128,17 +138,20 @@ class GrowthSuiteAgent:
 
     def _backlink_authority(
         self,
-        businesses: list[BusinessProfile],
+        business: BusinessProfile | None,
         campaigns: list[Campaign],
         dataforseo: DataForSEOClient,
     ) -> GrowthAgentCard:
-        business = businesses[0] if businesses else None
         summary = dataforseo.backlink_summary(
             business.website if business else "https://agenticgrowthlabs.com",
             business.competitors if business else [],
         )
-        seed_terms = [campaign.goal for campaign in campaigns[:3]]
-        opportunities = dataforseo.keyword_opportunities(seed_terms, campaigns[0].target_region if campaigns else "India")
+        scoped_campaigns = [campaign for campaign in campaigns if business and campaign.business_id == business.id] or campaigns
+        seed_terms = [campaign.goal for campaign in scoped_campaigns[:3]]
+        opportunities = dataforseo.keyword_opportunities(
+            seed_terms,
+            scoped_campaigns[0].target_region if scoped_campaigns else "India",
+        )
         return GrowthAgentCard(
             key="backlink_authority",
             name="Backlink / Authority Agent",
@@ -146,18 +159,18 @@ class GrowthSuiteAgent:
             mode=summary.mode,
             summary="Finds authority gaps, backlink opportunities, and SEO keyword demand using DataForSEO-ready signals.",
             metrics={
+                "business": business.name if business else "Default workspace",
                 "domain": summary.domain,
                 "backlinks": summary.backlinks,
                 "referring_domains": summary.referring_domains,
                 "authority_score": summary.authority_score,
-                "spam_score": summary.spam_score,
             },
             metric_sources={
+                "business": "App DB",
                 "domain": "App DB",
                 "backlinks": summary.source,
                 "referring_domains": summary.source,
                 "authority_score": summary.source,
-                "spam_score": summary.source,
             },
             recommendations=[
                 {
@@ -169,6 +182,9 @@ class GrowthSuiteAgent:
             artifacts={
                 "keyword_opportunities": opportunities,
                 "dataforseo_error": summary.error,
+                "selected_business_id": business.id if business else None,
+                "selected_business_website": business.website if business else None,
+                "spam_score": summary.spam_score,
             },
         )
 
@@ -400,6 +416,41 @@ class GrowthSuiteAgent:
             "average_page_health": round(mean(page_scores), 1) if page_scores else 0,
             "next_board_action": "Review refresh queue, then approve page updates with strongest business impact.",
         }
+
+    def _select_business(
+        self,
+        businesses: list[BusinessProfile],
+        business_id: str | None,
+    ) -> BusinessProfile | None:
+        if business_id:
+            explicit = next((business for business in businesses if business.id == business_id), None)
+            if explicit:
+                return explicit
+
+        real_domain_business = next(
+            (business for business in businesses if self._is_real_domain(business.website)),
+            None,
+        )
+        return real_domain_business or (businesses[0] if businesses else None)
+
+    @staticmethod
+    def _selected_business_payload(business: BusinessProfile | None) -> dict[str, str | None] | None:
+        if not business:
+            return None
+        return {
+            "id": business.id,
+            "name": business.name,
+            "website": business.website,
+            "industry": business.industry,
+        }
+
+    @staticmethod
+    def _is_real_domain(website: str | None) -> bool:
+        if not website:
+            return False
+        parsed = urlparse(website if "://" in website else f"https://{website}")
+        domain = (parsed.netloc or parsed.path).removeprefix("www.").strip("/").lower()
+        return bool(domain) and domain not in {"example.com", "localhost", "127.0.0.1"}
 
     def _orchestration(self, agents: list[GrowthAgentCard]) -> list[dict[str, object]]:
         return [

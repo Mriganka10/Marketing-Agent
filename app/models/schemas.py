@@ -242,6 +242,7 @@ class GrowthAgentCard(BaseModel):
 class GrowthSuiteOverview(BaseModel):
     mode: str
     readiness: dict[str, Any]
+    selected_business: dict[str, Any] | None = None
     agents: list[GrowthAgentCard]
     client_workspaces: list[dict[str, Any]]
     orchestration: list[dict[str, Any]]

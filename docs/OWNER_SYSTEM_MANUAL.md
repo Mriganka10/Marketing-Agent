@@ -178,6 +178,8 @@ Paid campaign safety:
 DataForSEO:
 
 - used by the Backlink / Authority Agent;
+- the Growth Suite `Authority target` dropdown controls which company's website is checked;
+- by default the app skips placeholder domains such as `example.com`, `localhost`, and `127.0.0.1` so client-facing authority numbers are tied to a real business website;
 - requires active account balance;
 - account readiness is checked separately from live backlink metrics;
 - backlink, referring-domain, authority, and spam-score values are live only when the DataForSEO Backlinks Summary endpoint succeeds;

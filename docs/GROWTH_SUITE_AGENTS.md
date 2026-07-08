@@ -13,6 +13,8 @@ The new Growth Suite adds the client package layer around that loop:
 
 2. Backlink / Authority Agent
    - Uses DataForSEO credentials to call the live Backlinks Summary API for domain authority, referring-domain, backlink, and spam-score signals.
+   - Uses the Growth Suite `Authority target` dropdown to decide which company's website should be sent to DataForSEO.
+   - Defaults to the first real company website and skips placeholder domains such as `example.com`, `localhost`, or `127.0.0.1` unless the owner explicitly selects that business.
    - Keeps a deterministic fallback so client demos still work if DataForSEO balance, permissions, or endpoint access is not ready.
    - Helps decide which pages need external authority support, not just on-page editing.
 
@@ -130,13 +132,14 @@ For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. 
 6. Click `Sync SEO metrics`.
 7. Use the company filter to view the selected client's page performance.
 8. Go to `Growth Suite`.
-9. Click `Run growth suite`.
-10. Review six agent cards, integration readiness, client workspaces, reporting snapshot, and orchestration flow.
-11. In the Google Ads command center, choose a campaign and daily budget.
-12. Click `Draft Google Ads plan`.
-13. Review headlines, keywords, final URL, status, and budget.
-14. Click `Validate` to ask Google Ads API to validate the plan.
-15. Click `Push paused campaign` only after owner approval.
+9. Select the correct company in `Authority target` before reviewing Backlink / Authority numbers.
+10. Click `Run growth suite`.
+11. Review six agent cards, integration readiness, client workspaces, reporting snapshot, and orchestration flow.
+12. In the Google Ads command center, choose a campaign and daily budget.
+13. Click `Draft Google Ads plan`.
+14. Review headlines, keywords, final URL, status, and budget.
+15. Click `Validate` to ask Google Ads API to validate the plan.
+16. Click `Push paused campaign` only after owner approval.
 
 ## Production Notes
 

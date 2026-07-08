@@ -275,11 +275,12 @@ def sync_seo_metrics(
 
 @router.get("/api/growth/overview", response_model=GrowthSuiteOverview)
 def growth_overview(
+    business_id: str | None = None,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
     llm: LLMService = Depends(get_llm),
 ) -> GrowthSuiteOverview:
-    return GrowthSuiteAgent(llm).overview(db, settings)
+    return GrowthSuiteAgent(llm).overview(db, settings, business_id=business_id)
 
 
 @router.post(
@@ -288,11 +289,12 @@ def growth_overview(
     dependencies=[Depends(require_api_key)],
 )
 def sync_growth_agents(
+    business_id: str | None = None,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
     llm: LLMService = Depends(get_llm),
 ) -> GrowthSuiteOverview:
-    return GrowthSuiteAgent(llm).overview(db, settings, persist=True)
+    return GrowthSuiteAgent(llm).overview(db, settings, persist=True, business_id=business_id)
 
 
 @router.get("/api/ads/plans", response_model=list[PaidAdPlanRead])

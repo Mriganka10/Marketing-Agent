@@ -708,6 +708,40 @@ tbody tr:last-child td { border-bottom: 0; }
   min-width: 260px;
 }
 
+.growth-business-picker {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid #cfe0df;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow);
+}
+
+.growth-business-picker span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.growth-business-picker select {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: #f8fbfb;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  outline: 1px solid transparent;
+}
+
+.growth-business-picker select:focus {
+  outline-color: rgba(15, 118, 110, 0.35);
+}
+
 .button-link.subtle {
   background: #ffffff;
   color: var(--accent);

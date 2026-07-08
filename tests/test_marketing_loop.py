@@ -470,6 +470,47 @@ def test_growth_suite_overview_and_sync(client):
     assert any(event["action"] == "growth_suite_synced" for event in audit)
 
 
+def test_growth_suite_authority_target_avoids_placeholder_domain(client):
+    real_business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Kairoz Corporation",
+            "website": "https://kairozcorporation.com",
+            "industry": "Leadership consulting",
+            "audience": "Enterprise HR leaders",
+            "value_proposition": "We build future-ready leadership systems.",
+            "offers": ["Leadership programs"],
+            "competitors": ["BetterUp"],
+        },
+    ).json()["id"]
+    placeholder_business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Placeholder Demo",
+            "website": "https://example.com",
+            "industry": "Demo",
+            "audience": "Internal demo",
+            "value_proposition": "Temporary placeholder profile.",
+            "offers": ["Demo pages"],
+            "competitors": [],
+        },
+    ).json()["id"]
+
+    default_payload = client.get("/api/growth/overview").json()
+    default_authority = next(agent for agent in default_payload["agents"] if agent["key"] == "backlink_authority")
+
+    assert default_payload["selected_business"]["id"] == real_business_id
+    assert default_authority["metrics"]["business"] == "Kairoz Corporation"
+    assert default_authority["metrics"]["domain"] == "kairozcorporation.com"
+
+    explicit_payload = client.get(f"/api/growth/overview?business_id={placeholder_business_id}").json()
+    explicit_authority = next(agent for agent in explicit_payload["agents"] if agent["key"] == "backlink_authority")
+
+    assert explicit_payload["selected_business"]["id"] == placeholder_business_id
+    assert explicit_authority["metrics"]["business"] == "Placeholder Demo"
+    assert explicit_authority["metrics"]["domain"] == "example.com"
+
+
 def test_paid_campaign_agent_drafts_and_guards_google_push(client):
     business_id = client.post(
         "/api/businesses",

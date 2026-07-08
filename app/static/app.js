@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, adPlans: [], seoBusiness: "all" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "pages", "activity"]);
 
@@ -93,6 +93,7 @@ async function loadBusinesses() {
   if (current && state.businesses.some((business) => business.id === current)) {
     select.value = current;
   }
+  renderGrowthBusinessFilter();
 }
 
 async function loadCampaigns() {
@@ -128,7 +129,13 @@ async function loadSeoOverview() {
 }
 
 async function loadGrowthOverview() {
-  state.growth = await api("/api/growth/overview");
+  const query = state.growthBusiness ? `?business_id=${encodeURIComponent(state.growthBusiness)}` : "";
+  state.growth = await api(`/api/growth/overview${query}`);
+  if (!state.growthBusiness && state.growth.selected_business?.id) {
+    state.growthBusiness = state.growth.selected_business.id;
+    localStorage.setItem("growthBusiness", state.growthBusiness);
+  }
+  renderGrowthBusinessFilter();
   renderGrowthReadiness(state.growth.readiness, state.growth.mode);
   renderGrowthAgents(state.growth.agents);
   renderWorkspaces(state.growth.client_workspaces);
@@ -286,7 +293,7 @@ function renderGrowthAgents(agents) {
     const sources = agent.metric_sources || {};
     const metricEntries = Object.entries(agent.metrics || {})
       .filter(([, value]) => value !== null && value !== undefined && value !== "")
-      .slice(0, 4);
+      .slice(0, agent.key === "backlink_authority" ? 5 : 4);
     return `
       <article class="growth-agent-card premium-agent-card">
         <div class="agent-card-top">
@@ -351,6 +358,7 @@ function sourceHelp(source) {
   if (normalized.includes("live google search console")) return "Real search performance from Google Search Console after sync.";
   if (normalized.includes("live ga4")) return "Real page/session analytics from GA4 after sync.";
   if (normalized.includes("live google ads")) return "Real campaign metrics returned by Google Ads API.";
+  if (normalized.includes("live dataforseo")) return "Real backlink and authority metrics returned by DataForSEO for the selected business domain.";
   if (normalized.includes("app db")) return "Count or value stored inside the Marketing Agent database.";
   if (normalized.includes("ai estimate")) return "Calculated by the OpenAI-powered agent, not a direct Google metric.";
   if (normalized.includes("fallback") || normalized.includes("demo")) return "Temporary deterministic value used until the live provider has usable data.";
@@ -474,6 +482,21 @@ function renderWorkspaces(workspaces) {
       <a href="#seo" class="button-link subtle">Open metrics</a>
     </article>
   `).join("") : `<p class="empty">Create a business to generate its client workspace.</p>`;
+}
+
+function renderGrowthBusinessFilter() {
+  const select = $("#growth-business-filter");
+  if (!select) return;
+  const current = state.growthBusiness || state.growth?.selected_business?.id || "";
+  select.innerHTML = state.businesses.length
+    ? state.businesses.map((business) => {
+      const website = business.website ? ` · ${business.website.replace(/^https?:\/\//, "").replace(/^www\./, "")}` : " · no website";
+      return `<option value="${escapeHtml(business.id)}">${escapeHtml(business.name)}${escapeHtml(website)}</option>`;
+    }).join("")
+    : `<option value="">Create a business first</option>`;
+  if (current && state.businesses.some((business) => business.id === current)) {
+    select.value = current;
+  }
 }
 
 function renderReportingSnapshot(reporting) {
@@ -657,7 +680,8 @@ $("#sync-seo").addEventListener("click", async () => {
 });
 $("#sync-growth").addEventListener("click", async () => {
   await withProcessing("Running growth suite", "AI visibility, authority, paid campaign readiness, reporting, workspaces, and refresh approvals are being coordinated.", async () => {
-    await api("/api/growth/sync", { method: "POST", body: JSON.stringify({}) });
+    const query = state.growthBusiness ? `?business_id=${encodeURIComponent(state.growthBusiness)}` : "";
+    await api(`/api/growth/sync${query}`, { method: "POST", body: JSON.stringify({}) });
     await refreshAll();
   });
   toast("Growth suite synced");
@@ -707,6 +731,14 @@ $("#paid-plan-list").addEventListener("click", async (event) => {
 $("#seo-business-filter").addEventListener("change", (event) => {
   state.seoBusiness = event.target.value;
   renderSeoPages(filteredSeoPages());
+});
+$("#growth-business-filter").addEventListener("change", async (event) => {
+  state.growthBusiness = event.target.value;
+  localStorage.setItem("growthBusiness", state.growthBusiness);
+  await withProcessing("Switching authority target", "The Backlink / Authority Agent is loading DataForSEO metrics for the selected company.", async () => {
+    await loadGrowthOverview();
+  });
+  toast("Authority target updated");
 });
 $("#refresh-businesses").addEventListener("click", async () => {
   await withProcessing("Refreshing businesses", "Loading the latest saved business profiles into the campaign dropdown.", loadBusinesses);

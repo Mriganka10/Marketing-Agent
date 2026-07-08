@@ -104,6 +104,8 @@ These values enable two checks:
 - account readiness through DataForSEO user data;
 - live Backlink / Authority Agent metrics through the DataForSEO Backlinks Summary API.
 
+The Growth Suite `Authority target` dropdown chooses which business website is checked. The backend defaults to the first real business website and avoids placeholder domains such as `example.com`, `localhost`, and `127.0.0.1` unless the owner explicitly selects that business.
+
 If account readiness is green but backlink metrics still show `Demo fallback`, the credentials are present but the backlinks endpoint is returning an authorization, balance, or data-access error. In that case, verify the DataForSEO account balance and API access, then run the Growth Suite again.
 
 ## Google Ads Values
