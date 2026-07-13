@@ -505,6 +505,9 @@ tbody tr:hover { background: #faf9ff; }
 .chart-line { fill: none; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .chart-line.primary { stroke: #5d4de3; }
 .chart-line.secondary { stroke: #a298f2; stroke-dasharray: 7 7; }
+.chart-point { vector-effect: non-scaling-stroke; stroke-width: 2.5; }
+.chart-point.primary { fill: #5d4de3; stroke: #fff; }
+.chart-point.secondary { fill: #fff; stroke: #a298f2; }
 .chart-axis { display: flex; justify-content: space-between; gap: 6px; color: #858da0; font-size: .6rem; }
 
 .google-table-card .table-wrap { max-height: 430px; }

@@ -376,6 +376,18 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     reports = client.get("/api/google-reports").json()
     assert reports["search_console"]["totals"]["impressions"] == 240
     assert reports["search_console"]["totals"]["clicks"] == 12
+    assert reports["schedule"]["label"] == "Daily at 8:30 AM IST"
+    assert len(reports["search_console"]["daily"]) == 5
+    assert reports["search_console"]["daily"][0] == {
+        "date": "2026-07-01",
+        "impressions": 0,
+        "clicks": 0,
+    }
+    assert reports["search_console"]["daily"][-1] == {
+        "date": "2026-07-05",
+        "impressions": 240,
+        "clicks": 12,
+    }
     assert reports["ga4"]["totals"]["sessions"] == 33
     event_counts = {
         event["event_name"]: event["event_count"] for event in reports["ga4"]["events"]

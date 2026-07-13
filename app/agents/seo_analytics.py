@@ -684,10 +684,12 @@ class SeoAnalyticsAgent:
                 "events": events,
                 "accepted_leads": int(lead_counts.get(page.id, 0)),
                 "qualified_leads": int(qualified_counts.get(page.id, 0)),
-                "search_daily": [
-                    {"date": day, **counts}
-                    for day, counts in sorted(search_page_daily.get(page.id, {}).items())
-                ],
+                "search_daily": self._filled_daily_series(
+                    start_date,
+                    end_date,
+                    search_page_daily.get(page.id, {}),
+                    ("impressions", "clicks"),
+                ),
                 "event_daily": [
                     {
                         "date": day,
@@ -715,7 +717,7 @@ class SeoAnalyticsAgent:
                 "enabled": settings.google_sync_schedule_enabled,
                 "time": settings.google_sync_schedule_time,
                 "timezone": settings.google_sync_schedule_timezone,
-                "label": f"Daily at {settings.google_sync_schedule_time} {settings.google_sync_schedule_timezone}",
+                "label": self._schedule_label(settings),
             },
             "search_console": {
                 "totals": {
@@ -726,14 +728,12 @@ class SeoAnalyticsAgent:
                     if position_weight
                     else 0,
                 },
-                "daily": [
-                    {
-                        "date": day,
-                        "impressions": int(values["impressions"]),
-                        "clicks": int(values["clicks"]),
-                    }
-                    for day, values in sorted(search_daily.items())
-                ],
+                "daily": self._filled_daily_series(
+                    start_date,
+                    end_date,
+                    search_daily,
+                    ("impressions", "clicks"),
+                ),
                 "pages": sorted(report_pages, key=lambda item: (item["impressions"], item["clicks"]), reverse=True),
                 "top_queries": self._top_queries(db),
                 "privacy_note": "Page totals are authoritative. Low-volume queries may be withheld by Google.",
@@ -763,6 +763,30 @@ class SeoAnalyticsAgent:
                 "source": "Google Analytics",
             },
         }
+
+    @staticmethod
+    def _filled_daily_series(
+        start_date: date,
+        end_date: date,
+        values: dict[str, dict[str, float | int]],
+        keys: tuple[str, ...],
+    ) -> list[dict[str, object]]:
+        series = []
+        current = start_date
+        while current <= end_date:
+            day = current.isoformat()
+            counts = values.get(day, {})
+            series.append({"date": day, **{key: int(counts.get(key, 0)) for key in keys}})
+            current += timedelta(days=1)
+        return series
+
+    @staticmethod
+    def _schedule_label(settings: Settings) -> str:
+        hour, minute = (int(part) for part in settings.google_sync_schedule_time.split(":", 1))
+        suffix = "AM" if hour < 12 else "PM"
+        display_hour = hour % 12 or 12
+        timezone = "IST" if settings.google_sync_schedule_timezone == "Asia/Kolkata" else settings.google_sync_schedule_timezone
+        return f"Daily at {display_hour}:{minute:02d} {suffix} {timezone}"
 
     @staticmethod
     def _latest_connection(db: Session, provider: str) -> SeoIntegrationConnection | None:

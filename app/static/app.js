@@ -415,16 +415,28 @@ function lineChart(rows, primaryKey, secondaryKey) {
   if (!rows?.length) return `<p class="empty">Google data will appear after the next sync.</p>`;
   const width = 900, height = 220, padX = 42, padY = 24;
   const max = Math.max(...rows.flatMap((row) => [Number(row[primaryKey]) || 0, Number(row[secondaryKey]) || 0]), 1);
-  const point = (row, index, key) => {
+  const coordinates = (row, index, key) => {
     const x = padX + (index * (width - padX * 2)) / Math.max(rows.length - 1, 1);
     const y = height - padY - ((Number(row[key]) || 0) / max) * (height - padY * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
+    return { x: x.toFixed(1), y: y.toFixed(1) };
   };
+  const points = (key) => rows.map((row, index) => {
+    const { x, y } = coordinates(row, index, key);
+    return `${x},${y}`;
+  }).join(" ");
+  const markers = (key, tone) => rows.map((row, index) => {
+    const value = Number(row[key]) || 0;
+    if (value === 0 && rows.length > 1) return "";
+    const { x, y } = coordinates(row, index, key);
+    return `<circle class="chart-point ${tone}" cx="${x}" cy="${y}" r="4.5"><title>${escapeHtml(shortDate(row.date))}: ${value.toLocaleString()}</title></circle>`;
+  }).join("");
   const labels = rows.filter((_, index) => index === 0 || index === rows.length - 1 || index % Math.max(1, Math.ceil(rows.length / 5)) === 0);
   return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
     ${[0,1,2,3].map((line) => `<line x1="${padX}" y1="${padY + line * 54}" x2="${width-padX}" y2="${padY + line * 54}" class="grid-line" />`).join("")}
-    <polyline class="chart-line secondary" points="${rows.map((row,index) => point(row,index,secondaryKey)).join(" ")}" />
-    <polyline class="chart-line primary" points="${rows.map((row,index) => point(row,index,primaryKey)).join(" ")}" />
+    <polyline class="chart-line secondary" points="${points(secondaryKey)}" />
+    <polyline class="chart-line primary" points="${points(primaryKey)}" />
+    ${markers(secondaryKey, "secondary")}
+    ${markers(primaryKey, "primary")}
   </svg><div class="chart-axis">${labels.map((row) => `<span>${escapeHtml(shortDate(row.date))}</span>`).join("")}</div>`;
 }
 
