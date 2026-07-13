@@ -29,9 +29,26 @@ This app is packaged for either Docker-based Elastic Beanstalk or a direct EC2 s
 5. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
 6. Prefer RDS Postgres for production traffic by storing `database-url` as a SecureString.
 
-The EC2 instance profile needs `ssm:GetParametersByPath` for the configured path and `kms:Decrypt`
-for its SecureString key. The bundled deployment script installs these permissions and removes
-legacy secret-bearing EB environment entries on the next update.
+The EC2 instance role receives a dedicated inline policy named
+`marketing-agent-ssm-parameter-read`. It grants only `ssm:GetParametersByPath` on:
+
+```text
+arn:aws:ssm:ap-south-1:<account-id>:parameter/marketing-agent/prod/*
+```
+
+SecureString decryption is limited to calls routed through the regional SSM service. Set
+`SSM_KMS_KEY_ARN` while running the deployment script to restrict `kms:Decrypt` to a customer-managed
+key; otherwise the policy uses `*` with the `kms:ViaService` condition for compatibility with the
+AWS-managed SSM key. The deployment script applies the policy idempotently to
+`marketing-agent-eb-ec2-role` and removes legacy secret-bearing EB environment entries.
+
+Verify the deployed permission with:
+
+```bash
+aws iam get-role-policy \
+  --role-name marketing-agent-eb-ec2-role \
+  --policy-name marketing-agent-ssm-parameter-read
+```
 
 Current production Elastic Beanstalk deployment:
 

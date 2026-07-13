@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.request
 import zipfile
@@ -8,6 +9,8 @@ from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
+
+from iam_policies import ssm_parameter_read_policy
 
 REGION = "ap-south-1"
 ACCOUNT_ID = boto3.client("sts", region_name=REGION).get_caller_identity()["Account"]
@@ -23,6 +26,8 @@ EB_EC2_ROLE = "marketing-agent-eb-ec2-role"
 EB_INSTANCE_PROFILE = "marketing-agent-eb-ec2-profile"
 RDS_SG_ID = "sg-0cd2ce77bb239265f"
 SSM_PATH = "/marketing-agent/prod"
+SSM_POLICY_NAME = "marketing-agent-ssm-parameter-read"
+SSM_KMS_KEY_ARN = os.getenv("SSM_KMS_KEY_ARN", "*")
 SOLUTION_STACK = "64bit Amazon Linux 2023 v4.13.3 running Docker"
 SOURCE_ZIP = Path("deploy/marketing-agent-eb-source.zip")
 S3_KEY = f"versions/{VERSION_LABEL}.zip"
@@ -173,20 +178,21 @@ def ensure_iam() -> None:
         "Version": "2012-10-17",
         "Statement": [
             {"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"],"Resource":[f"arn:aws:s3:::{EB_BUCKET}", f"arn:aws:s3:::{EB_BUCKET}/*", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}/*"]},
-            {
-                "Effect": "Allow",
-                "Action": ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"],
-                "Resource": f"arn:aws:ssm:{REGION}:{ACCOUNT_ID}:parameter{SSM_PATH}/*",
-            },
-            {
-                "Effect": "Allow",
-                "Action": "kms:Decrypt",
-                "Resource": "*",
-                "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
-            },
         ],
     }
     iam.put_role_policy(RoleName=EB_EC2_ROLE, PolicyName="marketing-agent-eb-app-access", PolicyDocument=json.dumps(inline))
+    iam.put_role_policy(
+        RoleName=EB_EC2_ROLE,
+        PolicyName=SSM_POLICY_NAME,
+        PolicyDocument=json.dumps(
+            ssm_parameter_read_policy(
+                region=REGION,
+                account_id=ACCOUNT_ID,
+                parameter_path=SSM_PATH,
+                kms_key_arn=SSM_KMS_KEY_ARN,
+            )
+        ),
+    )
     try:
         iam.get_instance_profile(InstanceProfileName=EB_INSTANCE_PROFILE)
     except ClientError as exc:

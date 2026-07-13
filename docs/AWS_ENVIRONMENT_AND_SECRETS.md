@@ -239,6 +239,10 @@ If values are changed in SSM:
 `/health` reports `ssm_runtime_loading` and `ssm_parameters_loaded` without exposing parameter names
 or decrypted values.
 
+The Elastic Beanstalk EC2 instance role uses the dedicated inline policy
+`marketing-agent-ssm-parameter-read`. Its SSM resource is restricted to
+`parameter/marketing-agent/prod/*`; it does not grant account-wide Parameter Store reads.
+
 ## Google Server And Play Store Clarification
 
 The app is not hosted on Google servers.
