@@ -22,53 +22,64 @@ class AnalyticsRefreshAgent:
         recommendations: list[RefreshRecommendation] = []
         for page in pages:
             score = seo_agent.score_page(db, page, settings)
+            if score.overall_score >= 70:
+                continue
+            existing = (
+                db.query(RefreshRecommendation)
+                .filter(
+                    RefreshRecommendation.campaign_id == campaign.id,
+                    RefreshRecommendation.page_id == page.id,
+                    RefreshRecommendation.status.in_(["open", "pending_approval", "approved"]),
+                )
+                .order_by(RefreshRecommendation.created_at.desc())
+                .first()
+            )
+            if existing:
+                recommendations.append(existing)
+                continue
             if score.impressions < 100:
-                recommendation = RefreshRecommendation(
-                    campaign_id=campaign.id,
-                    page_id=page.id,
-                    severity="low",
-                    recommendation=(
-                        f"Improve discovery for '{page.title}' with stronger keyword targeting, "
-                        "internal links, sitemap coverage, and richer section depth."
-                    ),
-                    expected_impact="More Google impressions and enough traffic for reliable conversion analysis.",
-                )
+                diagnosis = "Search discovery is below the minimum signal threshold."
+                exact_action = "Rewrite the SEO title and description, add one keyword-focused section, and add two internal links."
+                target = "Reach at least 100 search impressions before the next review."
             elif score.impressions >= 300 and score.ctr < 2:
-                recommendation = RefreshRecommendation(
-                    campaign_id=campaign.id,
-                    page_id=page.id,
-                    severity="high",
-                    recommendation=(
-                        f"Rewrite the SEO title, meta description, and schema for '{page.title}' "
-                        "because impressions are healthy but CTR is weak."
-                    ),
-                    expected_impact="Higher organic click-through rate from existing search visibility.",
-                )
+                diagnosis = "The page has search visibility, but its result is not earning enough clicks."
+                exact_action = "Replace the SEO title and meta description with the queued benefit-led copy and align the hero promise."
+                target = "Increase organic click-through rate to at least 2%."
             elif score.sessions >= 25 and score.conversion_rate < 3:
-                recommendation = RefreshRecommendation(
-                    campaign_id=campaign.id,
-                    page_id=page.id,
-                    severity="high",
-                    recommendation=(
-                        f"Refresh the hero, proof, CTA, and lead form for '{page.title}' "
-                        "because visitors are arriving but not converting."
-                    ),
-                    expected_impact="Higher form-start and form-submit rates from organic traffic.",
-                )
+                diagnosis = "The page receives traffic, but too few visitors complete the conversion path."
+                exact_action = "Replace the hero and CTA with the queued copy and add a proof-and-next-steps section above the form."
+                target = "Increase the landing-page conversion rate to at least 3%."
             else:
-                recommendation = RefreshRecommendation(
-                    campaign_id=campaign.id,
-                    page_id=page.id,
-                    severity="medium",
-                    recommendation=(
-                        f"Scale '{page.title}' into adjacent keyword, geography, persona, or industry variants."
-                    ),
-                    expected_impact="Incremental qualified traffic and leads from a proven page pattern.",
-                )
+                diagnosis = score.diagnosis
+                exact_action = score.next_action
+                target = "Raise the composite SEO and conversion score to at least 70/100."
+            recommendation = RefreshRecommendation(
+                campaign_id=campaign.id,
+                page_id=page.id,
+                severity="critical" if score.overall_score < 55 else "high",
+                recommendation=(
+                    f"Low-performing page '{page.title}' scored {score.overall_score}/100. "
+                    f"Diagnosis: {diagnosis} Queued change: {exact_action}"
+                ),
+                expected_impact=target,
+            )
             db.add(recommendation)
             db.flush()
             AutoRefreshApprovalAgent(LLMService(settings)).draft_rewrite(
-                db, recommendation, commit=False
+                db,
+                recommendation,
+                performance={
+                    "overall_score": score.overall_score,
+                    "threshold": 70,
+                    "diagnosis": diagnosis,
+                    "next_action": exact_action,
+                    "impressions": score.impressions,
+                    "ctr": score.ctr,
+                    "sessions": score.sessions,
+                    "conversion_rate": score.conversion_rate,
+                    "metric_sources": score.metric_sources,
+                },
+                commit=False,
             )
             recommendations.append(recommendation)
         seo_agent.record_recommendation_run(

@@ -3,7 +3,6 @@ def test_end_to_end_agent_loop_and_lead_capture(client):
         "/api/businesses",
         json={
             "name": "Northstar Growth Labs",
-            "website": "https://example.com",
             "industry": "B2B marketing automation",
             "audience": "SaaS founders and revenue teams",
             "value_proposition": "We launch search-led landing pages and optimize them from lead data.",
@@ -106,7 +105,7 @@ def test_page_listing_repairs_structured_content(client):
                     "'body': 'Create focused landing pages.', 'cta': 'Request Demo'}"
                 ),
                 sections=[],
-                cta="{'text': 'Request Demo', 'url': 'https://example.com'}",
+                cta="{'text': 'Request Demo', 'url': 'https://northstar.test'}",
                 seo={},
                 status="published",
             )
@@ -549,7 +548,7 @@ def test_growth_suite_overview_and_sync(client):
     assert any(event["action"] == "growth_suite_synced" for event in audit)
 
 
-def test_growth_suite_authority_target_avoids_placeholder_domain(client):
+def test_growth_suite_authority_target_never_crosses_company_domains(client):
     real_business_id = client.post(
         "/api/businesses",
         json={
@@ -565,8 +564,7 @@ def test_growth_suite_authority_target_avoids_placeholder_domain(client):
     placeholder_business_id = client.post(
         "/api/businesses",
         json={
-            "name": "Placeholder Demo",
-            "website": "https://example.com",
+            "name": "Website Pending",
             "industry": "Demo",
             "audience": "Internal demo",
             "value_proposition": "Temporary placeholder profile.",
@@ -586,8 +584,10 @@ def test_growth_suite_authority_target_avoids_placeholder_domain(client):
     explicit_authority = next(agent for agent in explicit_payload["agents"] if agent["key"] == "backlink_authority")
 
     assert explicit_payload["selected_business"]["id"] == placeholder_business_id
-    assert explicit_authority["metrics"]["business"] == "Placeholder Demo"
-    assert explicit_authority["metrics"]["domain"] == "example.com"
+    assert explicit_authority["metrics"]["business"] == "Website Pending"
+    assert explicit_authority["metrics"]["domain"] == "Not configured"
+    assert explicit_authority["metrics"]["backlinks"] == 0
+    assert explicit_authority["metric_sources"]["backlinks"] == "Configuration"
 
 
 def test_paid_campaign_agent_drafts_and_guards_google_push(client):
@@ -673,8 +673,14 @@ def test_auto_refresh_rewrite_requires_approval_before_publish(client):
 
     assert recommendation["status"] == "pending_approval"
     assert recommendation["refresh_plan"]["status"] == "pending_approval"
+    assert recommendation["recommendation"].startswith("Low-performing page")
     assert recommendation["refresh_plan"]["original_content"]["title"] == original_page["title"]
     assert recommendation["refresh_plan"]["proposed_content"]["title"] != original_page["title"]
+    snapshot = recommendation["refresh_plan"]["proposed_content"]["performance_snapshot"]
+    assert snapshot["overall_score"] < snapshot["threshold"] == 70
+    exact_changes = recommendation["refresh_plan"]["proposed_content"]["exact_changes"]
+    assert {change["field"] for change in exact_changes} >= {"SEO title", "Hero", "CTA"}
+    assert all(change["recommended"] and change["reason"] for change in exact_changes)
 
     blocked = client.post(
         f"/api/recommendations/{recommendation['id']}/publish",

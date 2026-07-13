@@ -34,7 +34,7 @@ def test_backlink_summary_uses_live_dataforseo_endpoint(monkeypatch):
                     {
                         "result": [
                             {
-                                "target": "example.com",
+                                "target": "selected-company.test",
                                 "rank": 537,
                                 "backlinks": 1234,
                                 "referring_domains": 98,
@@ -49,11 +49,11 @@ def test_backlink_summary_uses_live_dataforseo_endpoint(monkeypatch):
     monkeypatch.setattr("app.integrations.dataforseo.httpx.post", fake_post)
 
     settings = Settings(dataforseo_enabled=True, dataforseo_login="api-login", dataforseo_password="api-password")
-    summary = DataForSEOClient(settings).backlink_summary("https://example.com", [])
+    summary = DataForSEOClient(settings).backlink_summary("https://selected-company.test", [])
 
     assert calls[0]["url"].endswith("/backlinks/summary/live")
     assert calls[0]["auth"] == ("api-login", "api-password")
-    assert calls[0]["json"][0]["target"] == "example.com"
+    assert calls[0]["json"][0]["target"] == "selected-company.test"
     assert summary.source == "Live DataForSEO"
     assert summary.mode == "live_dataforseo_backlinks"
     assert summary.backlinks == 1234
@@ -77,12 +77,21 @@ def test_backlink_summary_falls_back_when_dataforseo_rejects_request(monkeypatch
     monkeypatch.setattr("app.integrations.dataforseo.httpx.get", fake_get)
 
     settings = Settings(dataforseo_enabled=True, dataforseo_login="api-login", dataforseo_password="api-password")
-    summary = DataForSEOClient(settings).backlink_summary("https://example.com", [])
+    summary = DataForSEOClient(settings).backlink_summary("https://selected-company.test", [])
 
     assert summary.source == "Demo fallback"
     assert summary.mode == "dataforseo_backlinks_error_fallback"
     assert summary.error is not None
     assert summary.backlinks > 0
+
+
+def test_backlink_summary_requires_selected_company_domain():
+    summary = DataForSEOClient(Settings()).backlink_summary(None, ["competitor.test"])
+
+    assert summary.domain == "Not configured"
+    assert summary.backlinks == 0
+    assert summary.source == "Configuration"
+    assert summary.mode == "company_domain_required"
 
 
 def test_account_status_does_not_expose_dataforseo_login(monkeypatch):

@@ -144,11 +144,15 @@ class GrowthSuiteAgent:
         dataforseo: DataForSEOClient,
     ) -> GrowthAgentCard:
         summary = dataforseo.backlink_summary(
-            business.website if business else "https://agenticgrowthlabs.com",
-            business.competitors if business else [],
+            business.website if business else None,
+            [],
         )
-        scoped_campaigns = [campaign for campaign in campaigns if business and campaign.business_id == business.id] or campaigns
+        scoped_campaigns = [
+            campaign for campaign in campaigns if business and campaign.business_id == business.id
+        ]
         seed_terms = [campaign.goal for campaign in scoped_campaigns[:3]]
+        if not seed_terms and business:
+            seed_terms = [*business.offers[:2], business.industry]
         opportunities = dataforseo.keyword_opportunities(
             seed_terms,
             scoped_campaigns[0].target_region if scoped_campaigns else "India",
@@ -160,7 +164,7 @@ class GrowthSuiteAgent:
             mode=summary.mode,
             summary="Finds authority gaps, backlink opportunities, and SEO keyword demand using DataForSEO-ready signals.",
             metrics={
-                "business": business.name if business else "Default workspace",
+                "business": business.name if business else "No company selected",
                 "domain": summary.domain,
                 "backlinks": summary.backlinks,
                 "referring_domains": summary.referring_domains,
@@ -461,7 +465,7 @@ class GrowthSuiteAgent:
             return False
         parsed = urlparse(website if "://" in website else f"https://{website}")
         domain = (parsed.netloc or parsed.path).removeprefix("www.").strip("/").lower()
-        return bool(domain) and domain not in {"example.com", "localhost", "127.0.0.1"}
+        return bool(domain) and domain not in {"localhost", "127.0.0.1"} and "." in domain
 
     def _orchestration(self, agents: list[GrowthAgentCard]) -> list[dict[str, object]]:
         return [

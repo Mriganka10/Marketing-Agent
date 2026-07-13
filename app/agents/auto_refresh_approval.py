@@ -29,6 +29,7 @@ class AutoRefreshApprovalAgent:
         db: Session,
         recommendation: RefreshRecommendation,
         *,
+        performance: dict[str, object] | None = None,
         commit: bool = True,
     ) -> RefreshApprovalPlan:
         existing = (
@@ -61,6 +62,8 @@ class AutoRefreshApprovalAgent:
             fallback=fallback,
         )
         proposed = self._normalize_rewrite(payload, fallback, page)
+        proposed["performance_snapshot"] = performance or {}
+        proposed["exact_changes"] = self._exact_changes(original, proposed, performance)
         plan = existing or RefreshApprovalPlan(
             recommendation_id=recommendation.id,
             campaign_id=recommendation.campaign_id,
@@ -182,6 +185,33 @@ class AutoRefreshApprovalAgent:
             "cta": coerce_text(payload.get("cta"), str(fallback["cta"]))[:160],
             "seo": seo,
         }
+
+    @staticmethod
+    def _exact_changes(
+        original: dict[str, object],
+        proposed: dict[str, object],
+        performance: dict[str, object] | None,
+    ) -> list[dict[str, str]]:
+        reason = str((performance or {}).get("diagnosis") or "Apply the approved refresh recommendation.")
+        original_seo = original.get("seo") if isinstance(original.get("seo"), dict) else {}
+        proposed_seo = proposed.get("seo") if isinstance(proposed.get("seo"), dict) else {}
+        changes = [
+            ("SEO title", original.get("title"), proposed.get("title")),
+            ("Hero", original.get("hero"), proposed.get("hero")),
+            ("CTA", original.get("cta"), proposed.get("cta")),
+            ("Meta description", original_seo.get("description"), proposed_seo.get("description")),
+            ("Page sections", original.get("sections"), proposed.get("sections")),
+        ]
+        return [
+            {
+                "field": field,
+                "current": coerce_text(current, "Not set"),
+                "recommended": coerce_text(recommended, "Not set"),
+                "reason": reason,
+            }
+            for field, current, recommended in changes
+            if current != recommended
+        ]
 
     def _fallback_rewrite(
         self, page: LandingPage, recommendation: RefreshRecommendation

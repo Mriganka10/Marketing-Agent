@@ -1869,9 +1869,40 @@ button.danger { color: var(--bad); }
 }
 
 .severity.high { color: var(--bad); }
+.severity.critical { color: var(--bad); font-weight: 800; }
 .severity.medium { color: var(--warn); }
 .severity.low { color: var(--good); }
 .severity.good { color: var(--good); }
+
+.performance-snapshot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.performance-snapshot strong,
+.performance-snapshot p { flex-basis: 100%; margin: 0; }
+
+.performance-snapshot span {
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.76rem;
+}
+
+.exact-change-list { display: grid; gap: 9px; margin-top: 12px; }
+
+.exact-change {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+}
+
+.exact-change span,
+.exact-change em { font-size: 0.78rem; overflow-wrap: anywhere; }
 
 .empty {
   margin: 0;

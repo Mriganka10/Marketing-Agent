@@ -53,7 +53,19 @@ class DataForSEOClient:
             return {"configured": True, "mode": "dataforseo_error_fallback", "error": str(exc)}
 
     def backlink_summary(self, website: str | None, competitors: list[str]) -> BacklinkSummary:
-        domain = self._domain(website) or self._domain(competitors[0] if competitors else "") or "agenticgrowthlabs.com"
+        del competitors
+        domain = self._domain(website)
+        if not domain:
+            return BacklinkSummary(
+                domain="Not configured",
+                backlinks=0,
+                referring_domains=0,
+                authority_score=0,
+                spam_score=0,
+                mode="company_domain_required",
+                source="Configuration",
+                error="Select a company with a website domain to run authority analysis.",
+            )
         if not self.is_configured:
             return self._fallback_backlink_summary(domain, "ready_for_credentials")
 

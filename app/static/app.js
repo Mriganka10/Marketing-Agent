@@ -196,10 +196,34 @@ function renderRecommendations(items) {
         <h3>${escapeHtml(item.recommendation)}</h3>
         <p>${escapeHtml(item.expected_impact)}</p>
         ${item.refresh_plan ? `
+          ${item.refresh_plan.proposed_content.performance_snapshot?.overall_score !== undefined ? `
+            <div class="performance-snapshot">
+              <strong>Performance snapshot</strong>
+              <span>SEO score ${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.overall_score)}/100</span>
+              <span>${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.impressions || 0)} impressions</span>
+              <span>${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.ctr || 0)}% CTR</span>
+              <span>${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.sessions || 0)} sessions</span>
+              <span>${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.conversion_rate || 0)}% conversion</span>
+              <p>${escapeHtml(item.refresh_plan.proposed_content.performance_snapshot.diagnosis || "")}</p>
+            </div>
+          ` : ""}
           <div class="rewrite-preview">
             <small>Proposed rewrite</small>
             <strong>${escapeHtml(item.refresh_plan.proposed_content.title)}</strong>
             <span>${escapeHtml(item.refresh_plan.change_summary)}</span>
+            ${item.refresh_plan.proposed_content.exact_changes?.length ? `
+              <div class="exact-change-list">
+                <small>Exact changes queued for approval</small>
+                ${item.refresh_plan.proposed_content.exact_changes.map((change) => `
+                  <div class="exact-change">
+                    <strong>${escapeHtml(change.field)}</strong>
+                    <span><b>Current:</b> ${escapeHtml(change.current)}</span>
+                    <span><b>Recommended:</b> ${escapeHtml(change.recommended)}</span>
+                    <em>${escapeHtml(change.reason)}</em>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
             ${item.refresh_plan.approved_by ? `<em>Approved by ${escapeHtml(item.refresh_plan.approved_by)}</em>` : ""}
             ${item.refresh_plan.rejection_reason ? `<em>Rejected: ${escapeHtml(item.refresh_plan.rejection_reason)}</em>` : ""}
           </div>

@@ -69,8 +69,6 @@ def theme_for_business(name: str | None, website: str | None) -> BrandTheme:
         return DEFAULT_THEME
     if hostname in BRAND_OVERRIDES:
         return BRAND_OVERRIDES[hostname]
-    if hostname.endswith(".example.com") or hostname == "example.com":
-        return DEFAULT_THEME
     return _theme_from_website(hostname, website or "") or DEFAULT_THEME
 
 
