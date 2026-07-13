@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record_audit
 from app.core.config import Settings, get_settings
+from app.agents.auto_refresh_approval import AutoRefreshApprovalAgent
+from app.agents.llm import LLMService
 from app.agents.seo_analytics import SeoAnalyticsAgent
 from app.models.entities import Campaign, LandingPage, RefreshRecommendation
 
@@ -64,6 +66,10 @@ class AnalyticsRefreshAgent:
                     expected_impact="Incremental qualified traffic and leads from a proven page pattern.",
                 )
             db.add(recommendation)
+            db.flush()
+            AutoRefreshApprovalAgent(LLMService(settings)).draft_rewrite(
+                db, recommendation, commit=False
+            )
             recommendations.append(recommendation)
         seo_agent.record_recommendation_run(
             db, campaign, pages=len(pages), recommendations=len(recommendations)
@@ -77,6 +83,6 @@ class AnalyticsRefreshAgent:
             action="refresh_recommendations_created",
             entity_type="campaign",
             entity_id=campaign.id,
-            metadata={"count": len(recommendations)},
+            metadata={"count": len(recommendations), "rewrite_drafts": len(recommendations)},
         )
         return recommendations

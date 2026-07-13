@@ -19,6 +19,7 @@ from app.models.entities import (
     LandingPage,
     Lead,
     PaidAdPlan,
+    RefreshApprovalPlan,
     RefreshRecommendation,
 )
 from app.models.schemas import GrowthAgentCard, GrowthSuiteOverview
@@ -196,7 +197,13 @@ class GrowthSuiteAgent:
     ) -> GrowthAgentCard:
         weak_pages = [page for page in seo.page_scores if page.overall_score < 70]
         open_recommendations = db.query(func.count(RefreshRecommendation.id)).filter(
-            RefreshRecommendation.status == "open"
+            RefreshRecommendation.status.in_(["open", "pending_approval"])
+        ).scalar() or 0
+        pending_approvals = db.query(func.count(RefreshApprovalPlan.id)).filter(
+            RefreshApprovalPlan.status == "pending_approval"
+        ).scalar() or 0
+        published_refreshes = db.query(func.count(RefreshApprovalPlan.id)).filter(
+            RefreshApprovalPlan.status == "published"
         ).scalar() or 0
         return GrowthAgentCard(
             key="auto_refresh_approval",
@@ -207,12 +214,16 @@ class GrowthSuiteAgent:
             metrics={
                 "pages_needing_refresh": len(weak_pages),
                 "open_recommendations": open_recommendations,
+                "pending_approvals": pending_approvals,
+                "published_refreshes": published_refreshes,
                 "campaigns_monitored": len(campaigns),
                 "approval_policy": "human_review_required",
             },
             metric_sources={
                 "pages_needing_refresh": self._seo_metric_source(seo),
                 "open_recommendations": "App DB",
+                "pending_approvals": "App DB",
+                "published_refreshes": "App DB",
                 "campaigns_monitored": "App DB",
                 "approval_policy": "Configuration",
             },

@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.agents.analytics_refresh import AnalyticsRefreshAgent
+from app.agents.auto_refresh_approval import AutoRefreshApprovalAgent
 from app.agents.business_memory import BusinessMemoryAgent
 from app.agents.content import ContentPageCreationAgent
 from app.agents.lead_capture import LeadCaptureAgent
@@ -48,6 +49,9 @@ from app.models.schemas import (
     PaidAdPlanRead,
     PaidAdPlanUpdateRequest,
     RecommendationRead,
+    RefreshApprovalRequest,
+    RefreshPublishRequest,
+    RefreshRejectionRequest,
     RunRequest,
     RunSummary,
     GrowthSuiteOverview,
@@ -228,6 +232,106 @@ def refresh_campaign(campaign_id: str, db: Session = Depends(get_db)) -> list[Re
 @router.get("/api/recommendations", response_model=list[RecommendationRead])
 def list_recommendations(db: Session = Depends(get_db)) -> list[RefreshRecommendation]:
     return db.query(RefreshRecommendation).order_by(RefreshRecommendation.created_at.desc()).limit(50).all()
+
+
+def _refresh_recommendation(db: Session, recommendation_id: str) -> RefreshRecommendation:
+    recommendation = db.get(RefreshRecommendation, recommendation_id)
+    if not recommendation:
+        raise HTTPException(status_code=404, detail="Refresh recommendation not found.")
+    return recommendation
+
+
+def _run_refresh_action(action):
+    try:
+        return action()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/api/recommendations/{recommendation_id}/rewrite",
+    response_model=RecommendationRead,
+    dependencies=[Depends(require_api_key)],
+)
+def draft_recommendation_rewrite(
+    recommendation_id: str,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> RefreshRecommendation:
+    recommendation = _refresh_recommendation(db, recommendation_id)
+    agent = AutoRefreshApprovalAgent(LLMService(settings))
+    _run_refresh_action(lambda: agent.draft_rewrite(db, recommendation))
+    db.refresh(recommendation)
+    return recommendation
+
+
+@router.post(
+    "/api/recommendations/{recommendation_id}/approve",
+    response_model=RecommendationRead,
+    dependencies=[Depends(require_api_key)],
+)
+def approve_recommendation_rewrite(
+    recommendation_id: str,
+    payload: RefreshApprovalRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> RefreshRecommendation:
+    recommendation = _refresh_recommendation(db, recommendation_id)
+    if not recommendation.refresh_plan:
+        raise HTTPException(status_code=409, detail="Generate a rewrite draft before approving it.")
+    agent = AutoRefreshApprovalAgent(LLMService(settings))
+    _run_refresh_action(
+        lambda: agent.approve(db, recommendation.refresh_plan, approved_by=payload.approved_by)
+    )
+    db.refresh(recommendation)
+    return recommendation
+
+
+@router.post(
+    "/api/recommendations/{recommendation_id}/reject",
+    response_model=RecommendationRead,
+    dependencies=[Depends(require_api_key)],
+)
+def reject_recommendation_rewrite(
+    recommendation_id: str,
+    payload: RefreshRejectionRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> RefreshRecommendation:
+    recommendation = _refresh_recommendation(db, recommendation_id)
+    if not recommendation.refresh_plan:
+        raise HTTPException(status_code=409, detail="There is no rewrite draft to reject.")
+    agent = AutoRefreshApprovalAgent(LLMService(settings))
+    _run_refresh_action(
+        lambda: agent.reject(db, recommendation.refresh_plan, reason=payload.reason)
+    )
+    db.refresh(recommendation)
+    return recommendation
+
+
+@router.post(
+    "/api/recommendations/{recommendation_id}/publish",
+    response_model=RecommendationRead,
+    dependencies=[Depends(require_api_key)],
+)
+def publish_recommendation_rewrite(
+    recommendation_id: str,
+    payload: RefreshPublishRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> RefreshRecommendation:
+    recommendation = _refresh_recommendation(db, recommendation_id)
+    if not payload.confirm_publish:
+        raise HTTPException(
+            status_code=400,
+            detail="Publishing requires confirm_publish=true after explicit rewrite approval.",
+        )
+    if not recommendation.refresh_plan:
+        raise HTTPException(status_code=409, detail="There is no rewrite draft to publish.")
+    agent = AutoRefreshApprovalAgent(LLMService(settings))
+    _run_refresh_action(lambda: agent.publish(db, recommendation.refresh_plan))
+    db.refresh(recommendation)
+    return recommendation
 
 
 @router.post("/api/events")

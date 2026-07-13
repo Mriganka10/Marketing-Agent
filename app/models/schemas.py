@@ -88,6 +88,39 @@ class LeadRead(LeadCreate):
     status: str
     created_at: datetime
 
+class RefreshApprovalPlanRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    recommendation_id: str
+    campaign_id: str
+    page_id: str
+    original_content: dict[str, Any]
+    proposed_content: dict[str, Any]
+    change_summary: str
+    status: str
+    approved_by: str | None
+    rejection_reason: str | None
+    created_by: str
+    approved_at: datetime | None
+    rejected_at: datetime | None
+    published_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RefreshApprovalRequest(BaseModel):
+    approved_by: str = Field(default="owner", min_length=2, max_length=160)
+
+
+class RefreshRejectionRequest(BaseModel):
+    reason: str = Field(min_length=3, max_length=1000)
+
+
+class RefreshPublishRequest(BaseModel):
+    confirm_publish: bool = False
+
+
 class RecommendationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -99,6 +132,7 @@ class RecommendationRead(BaseModel):
     expected_impact: str
     status: str
     created_at: datetime
+    refresh_plan: RefreshApprovalPlanRead | None = None
 
 
 class SeoSearchMetricRead(BaseModel):

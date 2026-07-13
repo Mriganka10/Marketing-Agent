@@ -10,7 +10,8 @@ Understand business -> find demand -> create pages -> capture leads -> measure S
 - Research Agent generates demand signals and buyer-intent keywords.
 - Content/Page Creation Agent creates SEO landing pages from the strongest signals.
 - Lead Capture Agent scores and stores inbound leads from generated pages.
-- Analytics/Refresh Agent reviews page performance and creates refresh recommendations.
+- Auto Refresh + Approval Agent reviews page performance, generates a complete rewrite draft,
+  waits for explicit owner approval, and publishes the approved version with snapshots and audit history.
 - Growth Suite Agents cover AI visibility, backlink authority, paid campaign readiness, client reporting, and client workspace separation.
 
 OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep the app usable in local and CI environments.
@@ -42,6 +43,10 @@ Keep local secrets and machine-specific settings in `.env`. This file is ignored
 - `GET /api/audit`
 - `GET /api/seo/integrations`
 - `POST /api/seo/sync`
+- `POST /api/recommendations/{id}/rewrite`
+- `POST /api/recommendations/{id}/approve`
+- `POST /api/recommendations/{id}/reject`
+- `POST /api/recommendations/{id}/publish`
 
 If `API_KEY` is set, protected write APIs require `x-api-key`.
 

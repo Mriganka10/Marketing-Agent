@@ -560,3 +560,92 @@ def test_paid_campaign_agent_drafts_and_guards_google_push(client):
 
     audit = client.get("/api/audit").json()
     assert any(event["action"] == "paid_ad_plan_drafted" for event in audit)
+
+
+def test_auto_refresh_rewrite_requires_approval_before_publish(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Approval Flow Labs",
+            "website": "https://approvalflow.example",
+            "industry": "Marketing automation",
+            "audience": "Growth teams that need controlled content operations",
+            "value_proposition": "We turn analytics signals into reviewable content changes.",
+            "offers": ["Content refresh automation"],
+            "competitors": [],
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Guarded refresh",
+            "goal": "Generate qualified conversations from organic landing pages.",
+            "target_region": "India",
+        },
+    ).json()["id"]
+
+    run = client.post(
+        "/api/runs", json={"campaign_id": campaign_id, "publish_pages": True}
+    ).json()
+    recommendation = run["recommendations"][0]
+    page_id = recommendation["page_id"]
+    original_page = next(page for page in run["pages"] if page["id"] == page_id)
+
+    assert recommendation["status"] == "pending_approval"
+    assert recommendation["refresh_plan"]["status"] == "pending_approval"
+    assert recommendation["refresh_plan"]["original_content"]["title"] == original_page["title"]
+    assert recommendation["refresh_plan"]["proposed_content"]["title"] != original_page["title"]
+
+    blocked = client.post(
+        f"/api/recommendations/{recommendation['id']}/publish",
+        json={"confirm_publish": True},
+    )
+    assert blocked.status_code == 409
+    assert "approved" in blocked.json()["detail"]
+
+    approved = client.post(
+        f"/api/recommendations/{recommendation['id']}/approve",
+        json={"approved_by": "Marketing owner"},
+    )
+    assert approved.status_code == 200
+    assert approved.json()["refresh_plan"]["status"] == "approved"
+    assert approved.json()["refresh_plan"]["approved_by"] == "Marketing owner"
+    unchanged_page = next(page for page in client.get("/api/pages").json() if page["id"] == page_id)
+    assert unchanged_page["title"] == original_page["title"]
+
+    missing_confirmation = client.post(
+        f"/api/recommendations/{recommendation['id']}/publish",
+        json={"confirm_publish": False},
+    )
+    assert missing_confirmation.status_code == 400
+
+    published = client.post(
+        f"/api/recommendations/{recommendation['id']}/publish",
+        json={"confirm_publish": True},
+    )
+    assert published.status_code == 200
+    assert published.json()["status"] == "published"
+    assert published.json()["refresh_plan"]["status"] == "published"
+    refreshed_page = next(page for page in client.get("/api/pages").json() if page["id"] == page_id)
+    assert refreshed_page["title"] == recommendation["refresh_plan"]["proposed_content"]["title"]
+
+    second_recommendation = run["recommendations"][1]
+    rejected = client.post(
+        f"/api/recommendations/{second_recommendation['id']}/reject",
+        json={"reason": "The positioning needs legal review first."},
+    )
+    assert rejected.status_code == 200
+    assert rejected.json()["refresh_plan"]["status"] == "rejected"
+
+    revised = client.post(
+        f"/api/recommendations/{second_recommendation['id']}/rewrite", json={}
+    )
+    assert revised.status_code == 200
+    assert revised.json()["refresh_plan"]["status"] == "pending_approval"
+    assert revised.json()["refresh_plan"]["rejection_reason"] is None
+
+    audit_actions = {event["action"] for event in client.get("/api/audit").json()}
+    assert "refresh_rewrite_approved" in audit_actions
+    assert "refresh_rewrite_published" in audit_actions
+    assert "refresh_rewrite_rejected" in audit_actions

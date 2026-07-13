@@ -1703,6 +1703,62 @@ button.ghost {
 
 .row-card p { margin-bottom: 6px; }
 
+.refresh-plan-card {
+  align-items: stretch;
+}
+
+.refresh-plan-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.refresh-plan-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.approval-state {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #eef4f3;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.approval-state.approved,
+.approval-state.published { background: #dcfce7; color: var(--good); }
+.approval-state.rejected { background: #fee2e2; color: var(--bad); }
+
+.rewrite-preview {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px;
+  border-left: 3px solid var(--accent);
+  background: #f7fbfa;
+}
+
+.rewrite-preview small,
+.rewrite-preview span,
+.rewrite-preview em {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.refresh-plan-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-width: 190px;
+}
+
+button.danger { color: var(--bad); }
+
 .severity {
   display: inline-block;
   padding: 4px 9px;

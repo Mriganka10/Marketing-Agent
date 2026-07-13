@@ -123,6 +123,38 @@ class RefreshRecommendation(Base):
     status: Mapped[str] = mapped_column(String(40), default="open")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    refresh_plan: Mapped["RefreshApprovalPlan | None"] = relationship(
+        back_populates="recommendation", uselist=False
+    )
+
+
+class RefreshApprovalPlan(Base):
+    __tablename__ = "refresh_approval_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    recommendation_id: Mapped[str] = mapped_column(
+        ForeignKey("refresh_recommendations.id"), nullable=False, unique=True
+    )
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), nullable=False)
+    page_id: Mapped[str] = mapped_column(ForeignKey("landing_pages.id"), nullable=False)
+    original_content: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    proposed_content: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    change_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="pending_approval")
+    approved_by: Mapped[str | None] = mapped_column(String(160))
+    rejection_reason: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(String(120), default="auto_refresh_approval_agent")
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+    recommendation: Mapped[RefreshRecommendation] = relationship(back_populates="refresh_plan")
+    page: Mapped[LandingPage] = relationship()
+
 
 class AuditEvent(Base):
     __tablename__ = "audit_events"

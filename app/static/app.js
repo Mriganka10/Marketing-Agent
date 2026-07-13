@@ -167,11 +167,36 @@ async function loadPages() {
 
 function renderRecommendations(items) {
   $("#recommendations-list").innerHTML = items.length ? items.map((item) => `
-    <article class="row-card">
-      <div>
-        <span class="severity ${escapeHtml(item.severity)}">${escapeHtml(item.severity)}</span>
+    <article class="row-card refresh-plan-card">
+      <div class="refresh-plan-copy">
+        <div class="refresh-plan-status">
+          <span class="severity ${escapeHtml(item.severity)}">${escapeHtml(item.severity)}</span>
+          <span class="approval-state ${escapeHtml(item.refresh_plan?.status || "not_drafted")}">${escapeHtml((item.refresh_plan?.status || "not drafted").replaceAll("_", " "))}</span>
+        </div>
         <h3>${escapeHtml(item.recommendation)}</h3>
         <p>${escapeHtml(item.expected_impact)}</p>
+        ${item.refresh_plan ? `
+          <div class="rewrite-preview">
+            <small>Proposed rewrite</small>
+            <strong>${escapeHtml(item.refresh_plan.proposed_content.title)}</strong>
+            <span>${escapeHtml(item.refresh_plan.change_summary)}</span>
+            ${item.refresh_plan.approved_by ? `<em>Approved by ${escapeHtml(item.refresh_plan.approved_by)}</em>` : ""}
+            ${item.refresh_plan.rejection_reason ? `<em>Rejected: ${escapeHtml(item.refresh_plan.rejection_reason)}</em>` : ""}
+          </div>
+        ` : ""}
+      </div>
+      <div class="refresh-plan-actions">
+        ${!item.refresh_plan && item.page_id ? `<button data-refresh-action="rewrite" data-recommendation-id="${item.id}">Generate rewrite</button>` : ""}
+        ${item.refresh_plan?.status === "pending_approval" ? `
+          <button data-refresh-action="approve" data-recommendation-id="${item.id}">Approve rewrite</button>
+          <button class="ghost danger" data-refresh-action="reject" data-recommendation-id="${item.id}">Reject</button>
+        ` : ""}
+        ${item.refresh_plan?.status === "approved" ? `
+          <button data-refresh-action="publish" data-recommendation-id="${item.id}">Publish approved version</button>
+          <button class="ghost danger" data-refresh-action="reject" data-recommendation-id="${item.id}">Reject</button>
+        ` : ""}
+        ${item.refresh_plan?.status === "rejected" ? `<button data-refresh-action="rewrite" data-recommendation-id="${item.id}">Generate revised rewrite</button>` : ""}
+        ${item.refresh_plan?.status === "published" ? `<a class="button-link" href="#pages">Review published page</a>` : ""}
       </div>
     </article>
   `).join("") : `<p class="empty">Recommendations appear after a campaign run.</p>`;
@@ -435,6 +460,10 @@ function renderGrowthLogs() {
     "agent_loop_completed",
     "business_profile_saved",
     "landing_pages_created",
+    "refresh_rewrite_drafted",
+    "refresh_rewrite_approved",
+    "refresh_rewrite_rejected",
+    "refresh_rewrite_published",
   ]);
   const events = state.audit
     .filter((event) => relevantActions.has(event.action) || String(event.actor || "").includes("agent"))
@@ -671,6 +700,40 @@ $("#campaign-form").addEventListener("submit", async (event) => {
 });
 
 $("#refresh-pages").addEventListener("click", refreshAll);
+$("#recommendations-list").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-refresh-action]");
+  if (!button) return;
+  const recommendationId = button.dataset.recommendationId;
+  const action = button.dataset.refreshAction;
+  let body = {};
+  if (action === "approve") {
+    if (!window.confirm("Approve this exact rewrite draft? The live page will remain unchanged until you publish it.")) return;
+    body = { approved_by: "owner" };
+  }
+  if (action === "reject") {
+    const reason = window.prompt("Why are you rejecting this rewrite?");
+    if (!reason) return;
+    body = { reason };
+  }
+  if (action === "publish") {
+    if (!window.confirm("Publish the approved rewrite now? The previous content will remain in version history.")) return;
+    body = { confirm_publish: true };
+  }
+  const labels = {
+    rewrite: ["Generating rewrite", "The agent is rewriting the full page and preserving the current version for review."],
+    approve: ["Approving rewrite", "Recording explicit owner approval without changing the live page."],
+    reject: ["Rejecting rewrite", "Closing the draft and recording the review reason."],
+    publish: ["Publishing approved rewrite", "Applying the approved draft and saving immutable before/after history."],
+  };
+  await withProcessing(labels[action][0], labels[action][1], async () => {
+    await api(`/api/recommendations/${recommendationId}/${action}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    await refreshAll();
+  });
+  toast(`${labels[action][0]} completed`);
+});
 $("#sync-seo").addEventListener("click", async () => {
   await withProcessing("Syncing SEO analytics", "The SEO Analytics Agent is collecting page, query, engagement, and conversion metrics.", async () => {
     await api("/api/seo/sync", { method: "POST", body: JSON.stringify({}) });
