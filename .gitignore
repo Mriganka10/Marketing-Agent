@@ -6,3 +6,5 @@ data/
 .env
 *.pyc
 *.egg-info/
+deploy/marketing-agent-eb-source.zip
+deploy/marketing-agent-eb-output.json

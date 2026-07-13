@@ -11,7 +11,7 @@ def ssm_parameter_read_policy(
     """Build least-privilege runtime access for one SSM parameter hierarchy."""
 
     normalized_path = f"/{parameter_path.strip().strip('/')}"
-    parameter_arn = f"arn:aws:ssm:{region}:{account_id}:parameter{normalized_path}/*"
+    parameter_arn = f"arn:aws:ssm:{region}:{account_id}:parameter{normalized_path}"
     return {
         "Version": "2012-10-17",
         "Statement": [
@@ -19,7 +19,7 @@ def ssm_parameter_read_policy(
                 "Sid": "ReadMarketingAgentRuntimeParameters",
                 "Effect": "Allow",
                 "Action": "ssm:GetParametersByPath",
-                "Resource": parameter_arn,
+                "Resource": [parameter_arn, f"{parameter_arn}/*"],
             },
             {
                 "Sid": "DecryptMarketingAgentSecureStrings",

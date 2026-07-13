@@ -14,10 +14,10 @@ def test_ssm_parameter_policy_is_limited_to_production_path():
         "Sid": "ReadMarketingAgentRuntimeParameters",
         "Effect": "Allow",
         "Action": "ssm:GetParametersByPath",
-        "Resource": (
-            "arn:aws:ssm:ap-south-1:123456789012:"
-            "parameter/marketing-agent/prod/*"
-        ),
+        "Resource": [
+            "arn:aws:ssm:ap-south-1:123456789012:parameter/marketing-agent/prod",
+            "arn:aws:ssm:ap-south-1:123456789012:parameter/marketing-agent/prod/*",
+        ],
     }
     assert kms_statement["Action"] == "kms:Decrypt"
     assert kms_statement["Resource"] == "arn:aws:kms:ap-south-1:123456789012:key/example"
@@ -34,4 +34,7 @@ def test_ssm_parameter_policy_normalizes_relative_path():
     )
 
     statement = policy["Statement"][0]
-    assert statement["Resource"].endswith("parameter/marketing-agent/prod/*")
+    assert statement["Resource"] == [
+        "arn:aws:ssm:us-east-1:123456789012:parameter/marketing-agent/prod",
+        "arn:aws:ssm:us-east-1:123456789012:parameter/marketing-agent/prod/*",
+    ]
