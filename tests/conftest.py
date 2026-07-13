@@ -10,6 +10,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     db_path = tmp_path / "test.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
     monkeypatch.setenv("OPENAI_ENABLED", "false")
+    monkeypatch.setenv("SSM_ENABLED", "false")
 
     from app.core.config import get_settings
     from app.core import database
@@ -28,4 +29,3 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
     app = create_app()
     return TestClient(app)
-

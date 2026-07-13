@@ -123,7 +123,7 @@ GOOGLE_ADS_API_VERSION=v23
 
 ## SSM Parameter Path
 
-Deployment script reads from:
+The application reads directly from this path at every process startup:
 
 ```text
 /marketing-agent/prod
@@ -136,6 +136,7 @@ Expected SSM parameters include:
 /marketing-agent/prod/openai-api-key
 /marketing-agent/prod/openai-model
 /marketing-agent/prod/secret-key
+/marketing-agent/prod/api-key
 /marketing-agent/prod/s3-bucket
 /marketing-agent/prod/ga4-measurement-id
 /marketing-agent/prod/ga4-property-id
@@ -157,8 +158,11 @@ Expected SSM parameters include:
 Recommended owner practice:
 
 - store long-lived production secrets in SSM SecureString parameters;
-- direct Elastic Beanstalk environment values can work, but SSM is safer and survives scripted deployments more predictably;
-- the deployment script preserves an existing Elastic Beanstalk value when an optional SSM parameter is missing, then falls back to the documented default.
+- keep only `AWS_REGION`, `SSM_ENABLED`, `SSM_PARAMETER_PATH`, `SSM_FAIL_FAST`, and
+  `SSM_REQUIRED_PARAMETERS` as EB bootstrap values;
+- SSM parameters take precedence over same-named environment values;
+- keep `SSM_FAIL_FAST=true` in production so missing IAM access, missing paths, or AWS failures stop startup instead of silently using stale values;
+- parameter names map from kebab case to application setting names, for example `openai-api-key` becomes `OPENAI_API_KEY` and `database-url` becomes `DATABASE_URL`.
 
 ## Verification Commands
 
@@ -226,11 +230,14 @@ Google Ads note:
 
 After adding or rotating Google Ads values, the already deployed container will use the new values only after Elastic Beanstalk finishes updating/restarting the environment. No separate code deploy is required for environment-only secret changes, but a code deploy is required for new application features.
 
-If values are changed in SSM and not directly in EB:
+If values are changed in SSM:
 
 1. Update SSM parameter.
-2. Rerun deployment script or update EB environment so the container receives the new value.
+2. Restart or redeploy the application process. Runtime settings are loaded once per process and cached.
 3. Confirm `/health`.
+
+`/health` reports `ssm_runtime_loading` and `ssm_parameters_loaded` without exposing parameter names
+or decrypted values.
 
 ## Google Server And Play Store Clarification
 

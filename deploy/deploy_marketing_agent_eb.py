@@ -26,6 +26,32 @@ SSM_PATH = "/marketing-agent/prod"
 SOLUTION_STACK = "64bit Amazon Linux 2023 v4.13.3 running Docker"
 SOURCE_ZIP = Path("deploy/marketing-agent-eb-source.zip")
 S3_KEY = f"versions/{VERSION_LABEL}.zip"
+LEGACY_RUNTIME_ENV = {
+    "SECRET_KEY",
+    "API_KEY",
+    "DATABASE_URL",
+    "OPENAI_ENABLED",
+    "OPENAI_API_KEY",
+    "OPENAI_MODEL",
+    "OPENAI_REASONING_EFFORT",
+    "OPENAI_EMBEDDING_MODEL",
+    "GA4_MEASUREMENT_ID",
+    "GA4_PROPERTY_ID",
+    "GOOGLE_SEARCH_CONSOLE_SITE_URL",
+    "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "DATAFORSEO_ENABLED",
+    "DATAFORSEO_LOGIN",
+    "DATAFORSEO_PASSWORD",
+    "GOOGLE_ADS_ENABLED",
+    "GOOGLE_ADS_DEVELOPER_TOKEN",
+    "GOOGLE_ADS_CLIENT_ID",
+    "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_REFRESH_TOKEN",
+    "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+    "GOOGLE_ADS_CUSTOMER_ID",
+    "GOOGLE_ADS_API_VERSION",
+    "S3_BUCKET",
+}
 
 
 def tags(name: str) -> list[dict[str, str]]:
@@ -146,7 +172,18 @@ def ensure_iam() -> None:
     inline = {
         "Version": "2012-10-17",
         "Statement": [
-            {"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"],"Resource":[f"arn:aws:s3:::{EB_BUCKET}", f"arn:aws:s3:::{EB_BUCKET}/*", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}/*"]}
+            {"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject","s3:ListBucket"],"Resource":[f"arn:aws:s3:::{EB_BUCKET}", f"arn:aws:s3:::{EB_BUCKET}/*", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}", f"arn:aws:s3:::marketing-agent-prod-{ACCOUNT_ID}-{REGION}/*"]},
+            {
+                "Effect": "Allow",
+                "Action": ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"],
+                "Resource": f"arn:aws:ssm:{REGION}:{ACCOUNT_ID}:parameter{SSM_PATH}/*",
+            },
+            {
+                "Effect": "Allow",
+                "Action": "kms:Decrypt",
+                "Resource": "*",
+                "Condition": {"StringEquals": {"kms:ViaService": f"ssm.{REGION}.amazonaws.com"}},
+            },
         ],
     }
     iam.put_role_policy(RoleName=EB_EC2_ROLE, PolicyName="marketing-agent-eb-app-access", PolicyDocument=json.dumps(inline))
@@ -186,19 +223,6 @@ def upload_source() -> None:
     client("s3").upload_file(str(SOURCE_ZIP), EB_BUCKET, S3_KEY)
 
 
-def get_secure(name: str) -> str:
-    return client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
-
-
-def get_optional_secure(name: str, default: str = "") -> str:
-    try:
-        return get_secure(name)
-    except ClientError as exc:
-        if exc.response["Error"].get("Code") == "ParameterNotFound":
-            return default
-        raise
-
-
 def ensure_app_and_version() -> None:
     eb = client("elasticbeanstalk")
     apps = eb.describe_applications(ApplicationNames=[APP_NAME]).get("Applications", [])
@@ -234,79 +258,22 @@ def existing_environment_values(eb) -> dict[str, str]:
     }
 
 
-def optional_env(
-    existing: dict[str, str],
-    parameter_name: str,
-    env_name: str,
-    default: str = "",
-) -> str:
-    value = get_optional_secure(parameter_name)
-    if value:
-        return value
-    existing_value = existing.get(env_name)
-    if existing_value:
-        return existing_value
-    return default
-
-
 def option_settings(
     vpc_id: str,
     subnet_ids: list[str],
     ec2_sg: str,
-    existing: dict[str, str] | None = None,
 ) -> list[dict[str, str]]:
-    existing = existing or {}
-    db_url = get_secure(f"{SSM_PATH}/database-url")
-    openai_key = get_secure(f"{SSM_PATH}/openai-api-key")
-    openai_model = optional_env(existing, f"{SSM_PATH}/openai-model", "OPENAI_MODEL", "gpt-5.5")
-    ga4_measurement_id = optional_env(existing, f"{SSM_PATH}/ga4-measurement-id", "GA4_MEASUREMENT_ID")
-    ga4_property_id = optional_env(existing, f"{SSM_PATH}/ga4-property-id", "GA4_PROPERTY_ID")
-    search_console_site_url = optional_env(existing, f"{SSM_PATH}/google-search-console-site-url", "GOOGLE_SEARCH_CONSOLE_SITE_URL")
-    google_service_account_json = optional_env(existing, f"{SSM_PATH}/google-service-account-json", "GOOGLE_SERVICE_ACCOUNT_JSON")
-    dataforseo_enabled = optional_env(existing, f"{SSM_PATH}/dataforseo-enabled", "DATAFORSEO_ENABLED", "false")
-    dataforseo_login = optional_env(existing, f"{SSM_PATH}/dataforseo-login", "DATAFORSEO_LOGIN")
-    dataforseo_password = optional_env(existing, f"{SSM_PATH}/dataforseo-password", "DATAFORSEO_PASSWORD")
-    google_ads_enabled = optional_env(existing, f"{SSM_PATH}/google-ads-enabled", "GOOGLE_ADS_ENABLED", "false")
-    google_ads_developer_token = optional_env(existing, f"{SSM_PATH}/google-ads-developer-token", "GOOGLE_ADS_DEVELOPER_TOKEN")
-    google_ads_client_id = optional_env(existing, f"{SSM_PATH}/google-ads-client-id", "GOOGLE_ADS_CLIENT_ID")
-    google_ads_client_secret = optional_env(existing, f"{SSM_PATH}/google-ads-client-secret", "GOOGLE_ADS_CLIENT_SECRET")
-    google_ads_refresh_token = optional_env(existing, f"{SSM_PATH}/google-ads-refresh-token", "GOOGLE_ADS_REFRESH_TOKEN")
-    google_ads_login_customer_id = optional_env(existing, f"{SSM_PATH}/google-ads-login-customer-id", "GOOGLE_ADS_LOGIN_CUSTOMER_ID")
-    google_ads_customer_id = optional_env(existing, f"{SSM_PATH}/google-ads-customer-id", "GOOGLE_ADS_CUSTOMER_ID")
-    google_ads_api_version = optional_env(existing, f"{SSM_PATH}/google-ads-api-version", "GOOGLE_ADS_API_VERSION", "v23")
-    secret_key = get_secure(f"{SSM_PATH}/secret-key")
-    app_s3_bucket = get_secure(f"{SSM_PATH}/s3-bucket")
     env = {
         "APP_NAME": "Marketing Agent",
         "ENVIRONMENT": "production",
-        "SECRET_KEY": secret_key,
-        "API_KEY": "",
-        "DATABASE_URL": db_url,
         "DATA_DIR": "/app/data",
-        "OPENAI_ENABLED": "true",
-        "OPENAI_API_KEY": openai_key,
-        "OPENAI_MODEL": openai_model or "gpt-5.5",
-        "OPENAI_REASONING_EFFORT": "medium",
-        "OPENAI_EMBEDDING_MODEL": "text-embedding-3-large",
         "PUBLIC_BASE_URL": PUBLIC_BASE_URL,
-        "GA4_MEASUREMENT_ID": ga4_measurement_id,
-        "GA4_PROPERTY_ID": ga4_property_id,
-        "GOOGLE_SEARCH_CONSOLE_SITE_URL": search_console_site_url,
-        "GOOGLE_SERVICE_ACCOUNT_JSON": google_service_account_json,
-        "DATAFORSEO_ENABLED": dataforseo_enabled,
-        "DATAFORSEO_LOGIN": dataforseo_login,
-        "DATAFORSEO_PASSWORD": dataforseo_password,
-        "GOOGLE_ADS_ENABLED": google_ads_enabled,
-        "GOOGLE_ADS_DEVELOPER_TOKEN": google_ads_developer_token,
-        "GOOGLE_ADS_CLIENT_ID": google_ads_client_id,
-        "GOOGLE_ADS_CLIENT_SECRET": google_ads_client_secret,
-        "GOOGLE_ADS_REFRESH_TOKEN": google_ads_refresh_token,
-        "GOOGLE_ADS_LOGIN_CUSTOMER_ID": google_ads_login_customer_id,
-        "GOOGLE_ADS_CUSTOMER_ID": google_ads_customer_id,
-        "GOOGLE_ADS_API_VERSION": google_ads_api_version,
         "ALLOWED_ORIGINS": '["*"]',
-        "S3_BUCKET": app_s3_bucket,
         "AWS_REGION": REGION,
+        "SSM_ENABLED": "true",
+        "SSM_PARAMETER_PATH": SSM_PATH,
+        "SSM_FAIL_FAST": "true",
+        "SSM_REQUIRED_PARAMETERS": "database-url,secret-key",
     }
     settings = [
         {"Namespace":"aws:elasticbeanstalk:environment","OptionName":"EnvironmentType","Value":"SingleInstance"},
@@ -329,9 +296,23 @@ def deploy_environment(vpc_id: str, subnet_ids: list[str], ec2_sg: str) -> dict:
     eb = client("elasticbeanstalk")
     envs = eb.describe_environments(ApplicationName=APP_NAME, EnvironmentNames=[ENV_NAME], IncludeDeleted=False).get("Environments", [])
     existing = existing_environment_values(eb) if envs else {}
-    opts = option_settings(vpc_id, subnet_ids, ec2_sg, existing)
+    opts = option_settings(vpc_id, subnet_ids, ec2_sg)
     if envs:
-        eb.update_environment(EnvironmentName=ENV_NAME, VersionLabel=VERSION_LABEL, OptionSettings=opts)
+        removals = [
+            {
+                "Namespace": "aws:elasticbeanstalk:application:environment",
+                "OptionName": name,
+            }
+            for name in sorted(LEGACY_RUNTIME_ENV.intersection(existing))
+        ]
+        update = dict(
+            EnvironmentName=ENV_NAME,
+            VersionLabel=VERSION_LABEL,
+            OptionSettings=opts,
+        )
+        if removals:
+            update["OptionsToRemove"] = removals
+        eb.update_environment(**update)
     else:
         eb.create_environment(
             ApplicationName=APP_NAME,

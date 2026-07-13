@@ -85,7 +85,7 @@ def get_orchestrator(llm: LLMService = Depends(get_llm)) -> MarketingOrchestrato
 
 
 @router.get("/health")
-def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
+def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool | int]:
     return {
         "status": "ok",
         "service": settings.app_name,
@@ -93,6 +93,8 @@ def health(settings: Settings = Depends(get_settings)) -> dict[str, str | bool]:
         "openai_configured": settings.can_use_openai,
         "dataforseo_configured": settings.can_use_dataforseo,
         "google_ads_configured": settings.can_use_google_ads,
+        "ssm_runtime_loading": settings.ssm_enabled,
+        "ssm_parameters_loaded": settings.ssm_loaded_parameters,
     }
 
 

@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -5,12 +6,20 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.aws_ssm import load_runtime_ssm
+
 
 class Settings(BaseSettings):
     app_name: str = "Marketing Agent"
     environment: Literal["local", "staging", "production"] = "local"
     secret_key: str = Field(default="change-me-before-production")
     api_key: str | None = Field(default=None, description="Optional x-api-key for write APIs")
+
+    aws_region: str = "ap-south-1"
+    ssm_enabled: bool = False
+    ssm_parameter_path: str = "/marketing-agent/prod"
+    ssm_fail_fast: bool = True
+    ssm_loaded_parameters: int = Field(default=0, exclude=True)
 
     database_url: str = "sqlite:///./data/marketing_agent.db"
     data_dir: Path = Path("./data")
@@ -76,6 +85,19 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    settings = Settings()
+    ssm = load_runtime_ssm()
+    values = {
+        **ssm.values,
+        "aws_region": ssm.region,
+        "ssm_enabled": ssm.enabled,
+        "ssm_parameter_path": ssm.parameter_path,
+        "ssm_loaded_parameters": ssm.parameter_count,
+    }
+    if isinstance(values.get("allowed_origins"), str):
+        try:
+            values["allowed_origins"] = json.loads(values["allowed_origins"])
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("SSM allowed-origins must be a valid JSON array.") from exc
+    settings = Settings(**values)
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     return settings

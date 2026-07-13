@@ -16,6 +16,10 @@ Understand business -> find demand -> create pages -> capture leads -> measure S
 
 OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep the app usable in local and CI environments.
 
+In AWS, set `SSM_ENABLED=true` and `SSM_PARAMETER_PATH=/marketing-agent/prod`. The app reads
+and decrypts its configuration directly from Parameter Store at process startup; secrets do not
+need to be copied into Elastic Beanstalk environment values.
+
 ## Run Locally
 
 ```bash

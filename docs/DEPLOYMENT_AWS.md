@@ -11,10 +11,27 @@ This app is packaged for either Docker-based Elastic Beanstalk or a direct EC2 s
 ## Elastic Beanstalk
 
 1. Create an Elastic Beanstalk Docker environment.
-2. Set production environment variables in Elastic Beanstalk. Use your local `.env` only as a private reference; do not upload or commit it.
-3. Attach an EBS volume or use a managed database for durable state.
-4. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
-5. Prefer RDS Postgres for production traffic by setting `DATABASE_URL` to a SQLAlchemy Postgres URL.
+2. Store application settings and secrets under `/marketing-agent/prod` in SSM Parameter Store.
+3. Set only the non-secret runtime bootstrap values in Elastic Beanstalk:
+
+   ```text
+   AWS_REGION=ap-south-1
+   SSM_ENABLED=true
+   SSM_PARAMETER_PATH=/marketing-agent/prod
+   SSM_FAIL_FAST=true
+   SSM_REQUIRED_PARAMETERS=database-url,secret-key
+   ```
+
+   The application retrieves all parameters recursively with decryption during startup. Required
+   parameters must exist and be non-empty. SSM values
+   override same-named EB environment values, so the runtime never depends on copied secret values.
+4. Attach an EBS volume or use a managed database for durable state.
+5. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
+6. Prefer RDS Postgres for production traffic by storing `database-url` as a SecureString.
+
+The EC2 instance profile needs `ssm:GetParametersByPath` for the configured path and `kms:Decrypt`
+for its SecureString key. The bundled deployment script installs these permissions and removes
+legacy secret-bearing EB environment entries on the next update.
 
 Current production Elastic Beanstalk deployment:
 
