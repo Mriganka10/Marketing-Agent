@@ -70,6 +70,9 @@ def test_health_and_root(client):
     root = client.get("/")
     assert root.status_code == 200
     assert "Marketing Agent" in root.text
+    assert "/static/redesign.css" in root.text
+    assert 'id="mobile-nav-toggle"' in root.text
+    assert 'id="overview-volume-chart"' in root.text
 
 
 def test_page_listing_repairs_structured_content(client):

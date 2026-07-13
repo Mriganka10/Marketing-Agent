@@ -1,6 +1,14 @@
 const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "pages", "activity"]);
+const routeTitles = {
+  overview: "Command center",
+  growth: "Growth suite",
+  launch: "Launch workspace",
+  seo: "SEO intelligence",
+  pages: "Content operations",
+  activity: "Activity control room",
+};
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -77,6 +85,9 @@ function setRoute() {
     link.classList.toggle("active", link.dataset.route === route);
   });
   $(".breadcrumb").textContent = `Marketing Agent / ${route.replaceAll("-", " ")}`;
+  $("#route-title").textContent = routeTitles[route];
+  document.body.classList.remove("nav-open");
+  $("#mobile-nav-toggle").setAttribute("aria-expanded", "false");
 }
 
 async function loadHealth() {
@@ -109,7 +120,34 @@ async function loadDashboard() {
   $("#m-leads").textContent = data.leads;
   $("#m-visits").textContent = data.visits;
   $("#m-rate").textContent = `${data.conversion_rate}%`;
+  renderOverviewCharts(data);
   renderRecommendations(data.recommendations);
+}
+
+function renderOverviewCharts(data) {
+  const metrics = [
+    ["Businesses", data.businesses],
+    ["Campaigns", data.campaigns],
+    ["Pages", data.pages],
+    ["Leads", data.leads],
+    ["Visits", data.visits],
+  ];
+  const maxValue = Math.max(...metrics.map(([, value]) => Number(value) || 0), 1);
+  $("#overview-volume-chart").innerHTML = metrics.map(([label, value]) => `
+    <div class="chart-column">
+      <strong>${Number(value).toLocaleString()}</strong>
+      <span class="chart-bar" style="--bar-size: ${Math.max(8, Math.round((Number(value) / maxValue) * 100))}%"></span>
+      <small>${escapeHtml(label)}</small>
+    </div>
+  `).join("");
+  const visits = Number(data.visits) || 0;
+  const leads = Number(data.leads) || 0;
+  const leadWidth = visits ? Math.max(8, Math.min(100, (leads / visits) * 100)) : 8;
+  $("#overview-funnel-rate").textContent = `${Number(data.conversion_rate || 0)}% conversion`;
+  $("#overview-funnel").innerHTML = `
+    <div><span>Visits</span><strong>${visits.toLocaleString()}</strong><i style="--funnel-size: 100%"></i></div>
+    <div><span>Leads</span><strong>${leads.toLocaleString()}</strong><i style="--funnel-size: ${leadWidth}%"></i></div>
+  `;
 }
 
 async function loadSeoOverview() {
@@ -764,6 +802,18 @@ function renderAuditTable(items) {
 async function refreshAll() {
   await Promise.all([loadBusinesses(), loadCampaigns(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGrowthOverview(), loadAdPlans()]);
 }
+
+$("#mobile-nav-toggle").addEventListener("click", () => {
+  const open = document.body.classList.toggle("nav-open");
+  $("#mobile-nav-toggle").setAttribute("aria-expanded", String(open));
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.body.classList.contains("nav-open")) {
+    document.body.classList.remove("nav-open");
+    $("#mobile-nav-toggle").setAttribute("aria-expanded", "false");
+  }
+});
 
 $("#business-form").addEventListener("submit", async (event) => {
   event.preventDefault();
