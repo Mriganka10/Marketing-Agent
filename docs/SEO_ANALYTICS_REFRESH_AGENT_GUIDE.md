@@ -292,6 +292,14 @@ Useful client interpretation:
 ```text
 High impressions + low CTR = improve title and meta description.
 Low impressions = improve content relevance, indexing, internal links, or keyword targeting.
+
+The portal labels every SEO and Activity metric with its source (`Live Google Search Console`,
+`Live GA4`, `App events`, `App DB`, or `Demo fallback`). Each landing page also shows an independent
+first-party funnel for page views, CTA clicks, form starts, form submits, and stored leads.
+
+The Google index status helper is intentionally advisory. It shows sitemap presence, the latest
+Search Console sync state, and a deep link to URL Inspection. An owner must use **Test Live URL** and
+**Request Indexing** manually; Google alone decides crawl and indexing timing.
 Good clicks + poor leads = improve landing page conversion.
 Unexpected queries = create new pages for emerging demand.
 ```

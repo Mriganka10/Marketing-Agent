@@ -122,10 +122,30 @@ async function loadSeoOverview() {
   $("#seo-position").textContent = Number(state.seo.average_position).toFixed(1);
   $("#seo-sessions").textContent = state.seo.sessions.toLocaleString();
   $("#seo-leads").textContent = state.seo.leads.toLocaleString();
+  setMetricSource("#seo-indexed-source", state.seo.metric_sources.indexed_pages);
+  setMetricSource("#seo-impressions-source", state.seo.metric_sources.organic_impressions);
+  setMetricSource("#seo-clicks-source", state.seo.metric_sources.organic_clicks);
+  setMetricSource("#seo-ctr-source", state.seo.metric_sources.ctr);
+  setMetricSource("#seo-position-source", state.seo.metric_sources.average_position);
+  setMetricSource("#seo-sessions-source", state.seo.metric_sources.sessions);
+  setMetricSource("#seo-leads-source", state.seo.metric_sources.leads);
   renderSeoReadiness(state.seo.integration_status);
   renderSeoBusinessFilter(state.seo.page_scores);
   renderSeoPages(filteredSeoPages());
   renderSeoQueries(state.seo.top_queries);
+  renderActivityEvents(state.seo.page_scores);
+}
+
+function setMetricSource(selector, source) {
+  const element = $(selector);
+  if (!element) return;
+  element.textContent = source || "Source pending";
+  element.className = `metric-source ${sourceTone(source)}`;
+  element.title = sourceHelp(source);
+}
+
+function sourceBadge(source) {
+  return `<em class="metric-source ${escapeHtml(sourceTone(source))}" title="${escapeHtml(sourceHelp(source))}">${escapeHtml(source || "Source pending")}</em>`;
 }
 
 async function loadGrowthOverview() {
@@ -242,14 +262,16 @@ function renderSeoPages(items) {
         <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open page</a>
       </div>
       <div class="seo-report-metrics">
-        <span><small>Google impressions</small><strong>${page.impressions.toLocaleString()}</strong></span>
-        <span><small>Google clicks</small><strong>${page.clicks.toLocaleString()}</strong></span>
-        <span><small>CTR</small><strong>${Number(page.ctr).toFixed(2)}%</strong></span>
-        <span><small>Average position</small><strong>${Number(page.average_position).toFixed(1)}</strong></span>
-        <span><small>GA4 sessions</small><strong>${page.sessions.toLocaleString()}</strong></span>
-        <span><small>Leads</small><strong>${page.leads.toLocaleString()}</strong></span>
-        <span><small>Conversion rate</small><strong>${Number(page.conversion_rate).toFixed(1)}%</strong></span>
+        <span><small>Google impressions</small><strong>${page.impressions.toLocaleString()}</strong>${sourceBadge(page.metric_sources.impressions)}</span>
+        <span><small>Google clicks</small><strong>${page.clicks.toLocaleString()}</strong>${sourceBadge(page.metric_sources.clicks)}</span>
+        <span><small>CTR</small><strong>${Number(page.ctr).toFixed(2)}%</strong>${sourceBadge(page.metric_sources.ctr)}</span>
+        <span><small>Average position</small><strong>${Number(page.average_position).toFixed(1)}</strong>${sourceBadge(page.metric_sources.average_position)}</span>
+        <span><small>Sessions</small><strong>${page.sessions.toLocaleString()}</strong>${sourceBadge(page.metric_sources.sessions)}</span>
+        <span><small>Leads</small><strong>${page.leads.toLocaleString()}</strong>${sourceBadge(page.metric_sources.leads)}</span>
+        <span><small>Conversion rate</small><strong>${Number(page.conversion_rate).toFixed(1)}%</strong>${sourceBadge(page.metric_sources.conversion_rate)}</span>
       </div>
+      ${renderFirstPartyFunnel(page)}
+      ${renderIndexHelper(page)}
       <div class="seo-report-action">
         <span>${escapeHtml(page.diagnosis)}</span>
         <strong>Recommendation: ${escapeHtml(page.next_action)}</strong>
@@ -258,11 +280,55 @@ function renderSeoPages(items) {
   `).join("") : `<p class="empty">Run a campaign and sync SEO metrics to populate page scores.</p>`;
 }
 
+function renderFirstPartyFunnel(page) {
+  const events = page.first_party_events;
+  const sources = events.metric_sources || {};
+  const metrics = [
+    ["Page views", events.page_views, sources.page_views],
+    ["CTA clicks", events.cta_clicks, sources.cta_clicks],
+    ["Form starts", events.form_starts, sources.form_starts],
+    ["Form submits", events.form_submits, sources.form_submits],
+    ["Leads", events.leads, sources.leads],
+  ];
+  return `
+    <div class="first-party-funnel">
+      <div class="mini-head"><h4>First-party app event funnel</h4><span>Last event ${escapeHtml(formatDate(events.last_event_at))}</span></div>
+      <div>${metrics.map(([label, value, source]) => `
+        <span><small>${escapeHtml(label)}</small><strong>${Number(value).toLocaleString()}</strong>${sourceBadge(source)}</span>
+      `).join("")}</div>
+    </div>
+  `;
+}
+
+function renderIndexHelper(page) {
+  const helper = page.google_index_status;
+  return `
+    <details class="index-helper">
+      <summary>
+        <span>Google index status helper</span>
+        <strong class="index-status ${escapeHtml(helper.status)}">${escapeHtml(helper.status_label)}</strong>
+        ${sourceBadge(helper.status_source)}
+      </summary>
+      <div class="index-helper-grid">
+        <span><small>Sitemap presence</small><strong>${helper.in_sitemap ? "Included" : "Not included"}</strong>${sourceBadge(helper.sitemap_source)}</span>
+        <span><small>Last Search Console sync</small><strong>${escapeHtml(formatDate(helper.last_synced_at))}</strong>${sourceBadge(helper.status_source)}</span>
+        <span><small>Sync status</small><strong>${escapeHtml(helper.last_sync_status.replaceAll("_", " "))}</strong>${sourceBadge("Integration status")}</span>
+      </div>
+      <div class="index-helper-actions">
+        <a class="button-link" href="${escapeHtml(helper.search_console_inspect_url)}" target="_blank" rel="noreferrer">Inspect URL in Search Console</a>
+        <a class="button-link subtle" href="${escapeHtml(helper.sitemap_url)}" target="_blank" rel="noreferrer">Open sitemap</a>
+      </div>
+      <p>${escapeHtml(helper.manual_guidance)}</p>
+    </details>
+  `;
+}
+
 function renderSeoQueries(items) {
   $("#seo-queries-list").innerHTML = items.length ? items.map((item) => `
     <article class="query-card">
       <strong>${escapeHtml(item.query)}</strong>
       <span>${Number(item.impressions).toLocaleString()} impressions · ${Number(item.clicks).toLocaleString()} clicks · avg. ${Number(item.average_position).toFixed(1)}</span>
+      ${sourceBadge(item.source)}
     </article>
   `).join("") : `<p class="empty">Search queries appear after SEO metric sync.</p>`;
 }
@@ -370,7 +436,7 @@ function renderGrowthAgents(agents) {
 function sourceTone(source) {
   const value = String(source || "").toLowerCase();
   if (value.includes("live")) return "live";
-  if (value.includes("app db")) return "db";
+  if (value.includes("app db") || value.includes("app event") || value.includes("audit db")) return "db";
   if (value.includes("ai")) return "ai";
   if (value.includes("fallback") || value.includes("demo")) return "fallback";
   if (value.includes("configured") || value.includes("waiting")) return "pending";
@@ -385,6 +451,10 @@ function sourceHelp(source) {
   if (normalized.includes("live google ads")) return "Real campaign metrics returned by Google Ads API.";
   if (normalized.includes("live dataforseo")) return "Real backlink and authority metrics returned by DataForSEO for the selected business domain.";
   if (normalized.includes("app db")) return "Count or value stored inside the Marketing Agent database.";
+  if (normalized.includes("app event")) return "First-party browser or server event recorded by this application.";
+  if (normalized.includes("app calculation")) return "Calculated inside the application from page content and stored metrics.";
+  if (normalized.includes("app-generated sitemap")) return "Presence in the sitemap generated by this application.";
+  if (normalized.includes("integration status")) return "Connection and last-sync state stored by the integration layer.";
   if (normalized.includes("ai estimate")) return "Calculated by the OpenAI-powered agent, not a direct Google metric.";
   if (normalized.includes("fallback") || normalized.includes("demo")) return "Temporary deterministic value used until the live provider has usable data.";
   if (normalized.includes("configured") || normalized.includes("waiting")) return "Credentials exist, but the provider has not returned usable page-level data yet.";
@@ -626,8 +696,27 @@ function renderLeadsTable(items) {
       <td>${escapeHtml(lead.company || "-")}</td>
       <td><span class="status-chip ${escapeHtml(lead.status)}">${escapeHtml(lead.status)}</span></td>
       <td><strong>${Number(lead.score).toFixed(0)}</strong></td>
+      <td>${sourceBadge("App DB")}</td>
     </tr>
-  `).join("") : `<tr><td colspan="4">Captured leads will appear here.</td></tr>`;
+  `).join("") : `<tr><td colspan="5">Captured leads will appear here.</td></tr>`;
+}
+
+function renderActivityEvents(items) {
+  const container = $("#page-events-list");
+  if (!container) return;
+  $("#page-event-count").textContent = items.reduce((total, page) => {
+    const events = page.first_party_events;
+    return total + events.page_views + events.cta_clicks + events.form_starts + events.form_submits;
+  }, 0);
+  container.innerHTML = items.length ? items.map((page) => `
+    <article class="activity-event-card">
+      <div>
+        <strong>${escapeHtml(page.title)}</strong>
+        <span>${escapeHtml(page.business_name || "Unknown company")} · ${escapeHtml(formatPath(page.url))}</span>
+      </div>
+      ${renderFirstPartyFunnel(page)}
+    </article>
+  `).join("") : `<p class="empty">First-party landing-page events will appear here.</p>`;
 }
 
 async function loadAudit() {
@@ -643,8 +732,9 @@ function renderAuditTable(items) {
       <td><strong>${escapeHtml(event.actor)}</strong></td>
       <td>${escapeHtml(event.action)}</td>
       <td>${escapeHtml(formatDate(event.created_at))}</td>
+      <td>${sourceBadge("App audit DB")}</td>
     </tr>
-  `).join("") : `<tr><td colspan="3">Audit events will appear here.</td></tr>`;
+  `).join("") : `<tr><td colspan="4">Audit events will appear here.</td></tr>`;
 }
 
 async function refreshAll() {

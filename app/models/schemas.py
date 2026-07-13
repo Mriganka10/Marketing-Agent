@@ -218,6 +218,9 @@ class SeoPageScore(BaseModel):
     conversion_rate: float
     diagnosis: str
     next_action: str
+    metric_sources: dict[str, str]
+    first_party_events: dict[str, Any]
+    google_index_status: dict[str, Any]
 
 
 class SeoOverview(BaseModel):
@@ -232,6 +235,7 @@ class SeoOverview(BaseModel):
     leads: int
     conversion_rate: float
     pages_needing_refresh: int
+    metric_sources: dict[str, str]
     top_queries: list[dict[str, Any]]
     integration_status: dict[str, Any]
     page_scores: list[SeoPageScore]

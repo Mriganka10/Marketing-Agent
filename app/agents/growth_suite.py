@@ -232,7 +232,7 @@ class GrowthSuiteAgent:
                 for page in weak_pages[:4]
             ]
             or [{"title": "No urgent refreshes", "impact": "Current published pages are above the refresh threshold."}],
-            artifacts={"refresh_queue": [page.model_dump() for page in weak_pages[:8]]},
+            artifacts={"refresh_queue": [page.model_dump(mode="json") for page in weak_pages[:8]]},
         )
 
     def _paid_campaigns(self, db: Session, campaigns: list[Campaign], google_ads: GoogleAdsClient) -> GrowthAgentCard:

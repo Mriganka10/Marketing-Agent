@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=refresh-approval-20260713-1" />
+  <link rel="stylesheet" href="/static/styles.css?v=seo-sources-events-indexing-20260713-1" />
 </head>
 <body>
   <div class="app-shell">
@@ -219,13 +219,13 @@
         <div class="integration-readiness" id="seo-readiness"></div>
         <div class="seo-status-strip">
           <article><span>GSC + GA4 mode</span><strong id="seo-mode">Checking</strong></article>
-          <article><span>Indexed pages</span><strong id="seo-indexed">0</strong></article>
-          <article><span>Impressions</span><strong id="seo-impressions">0</strong></article>
-          <article><span>Clicks</span><strong id="seo-clicks">0</strong></article>
-          <article><span>CTR</span><strong id="seo-ctr">0%</strong></article>
-          <article><span>Avg. position</span><strong id="seo-position">0</strong></article>
-          <article><span>Sessions</span><strong id="seo-sessions">0</strong></article>
-          <article><span>SEO leads</span><strong id="seo-leads">0</strong></article>
+          <article><span>Indexed pages</span><strong id="seo-indexed">0</strong><em id="seo-indexed-source" class="metric-source pending">Source pending</em></article>
+          <article><span>Impressions</span><strong id="seo-impressions">0</strong><em id="seo-impressions-source" class="metric-source pending">Source pending</em></article>
+          <article><span>Clicks</span><strong id="seo-clicks">0</strong><em id="seo-clicks-source" class="metric-source pending">Source pending</em></article>
+          <article><span>CTR</span><strong id="seo-ctr">0%</strong><em id="seo-ctr-source" class="metric-source pending">Source pending</em></article>
+          <article><span>Avg. position</span><strong id="seo-position">0</strong><em id="seo-position-source" class="metric-source pending">Source pending</em></article>
+          <article><span>Sessions</span><strong id="seo-sessions">0</strong><em id="seo-sessions-source" class="metric-source pending">Source pending</em></article>
+          <article><span>SEO leads</span><strong id="seo-leads">0</strong><em id="seo-leads-source" class="metric-source pending">Source pending</em></article>
         </div>
         <div class="seo-grid">
           <div class="seo-page-performance">
@@ -326,6 +326,7 @@
           </div>
           <div class="tab-switcher" role="tablist" aria-label="Activity views">
             <button class="tab-button active" type="button" data-tab="leads">Leads <span id="recent-lead-count">0</span></button>
+            <button class="tab-button" type="button" data-tab="events">Page events <span id="page-event-count">0</span></button>
             <button class="tab-button" type="button" data-tab="audit">Governance <span id="audit-count">0</span></button>
           </div>
         </div>
@@ -339,13 +340,18 @@
                   <th>Company</th>
                   <th>Status</th>
                   <th>Score</th>
+                  <th>Metric source</th>
                 </tr>
               </thead>
               <tbody id="leads-table-body">
-                <tr><td colspan="4">Captured leads will appear here.</td></tr>
+                <tr><td colspan="5">Captured leads will appear here.</td></tr>
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div class="tab-panel" id="events-panel">
+          <div id="page-events-list" class="page-events-list"></div>
         </div>
 
         <div class="tab-panel" id="audit-panel">
@@ -356,10 +362,11 @@
                   <th>Agent</th>
                   <th>Event</th>
                   <th>Time</th>
+                  <th>Metric source</th>
                 </tr>
               </thead>
               <tbody id="audit-table-body">
-                <tr><td colspan="3">Audit events will appear here.</td></tr>
+                <tr><td colspan="4">Audit events will appear here.</td></tr>
               </tbody>
             </table>
           </div>
@@ -388,6 +395,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=refresh-approval-20260713-1"></script>
+  <script src="/static/app.js?v=seo-sources-events-indexing-20260713-1"></script>
 </body>
 </html>

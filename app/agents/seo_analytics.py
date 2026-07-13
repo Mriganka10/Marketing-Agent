@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from statistics import mean
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -311,7 +311,11 @@ class SeoAnalyticsAgent:
         top_queries = self._top_queries(db)
         return SeoOverview(
             pages_published=len(pages),
-            indexed_pages=sum(1 for score in scores if score.impressions > 0),
+            indexed_pages=sum(
+                1
+                for score in scores
+                if score.google_index_status["status"] == "google_data_detected"
+            ),
             organic_impressions=impressions,
             organic_clicks=clicks,
             ctr=round((clicks / impressions) * 100, 2) if impressions else 0,
@@ -323,6 +327,17 @@ class SeoAnalyticsAgent:
             leads=leads,
             conversion_rate=round((leads / sessions) * 100, 2) if sessions else 0,
             pages_needing_refresh=sum(1 for score in scores if score.overall_score < 70),
+            metric_sources={
+                "indexed_pages": "Live Google Search Console",
+                "organic_impressions": self._overview_source(scores, "impressions"),
+                "organic_clicks": self._overview_source(scores, "clicks"),
+                "ctr": self._overview_source(scores, "ctr"),
+                "average_position": self._overview_source(scores, "average_position"),
+                "sessions": self._overview_source(scores, "sessions"),
+                "engaged_sessions": self._overview_source(scores, "engaged_sessions"),
+                "leads": "App DB",
+                "conversion_rate": self._overview_source(scores, "conversion_rate"),
+            },
             top_queries=top_queries,
             integration_status=self.integration_status(db, settings),
             page_scores=scores,
@@ -367,13 +382,30 @@ class SeoAnalyticsAgent:
             conversion_rate=conversion_rate,
         )
         business = page.campaign.business if page.campaign else None
+        page_url = urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}")
+        search_source = self._metric_source(
+            {item.source for item in search}, fallback="Waiting for Google Search Console"
+        )
+        analytics_source = self._metric_source(
+            {item.source for item in analytics},
+            fallback="App DB" if page.visits else "Waiting for analytics events",
+        )
+        first_party_events = self._first_party_event_summary(db, page)
+        google_index_status = self._google_index_status(
+            db,
+            settings,
+            page,
+            page_url=page_url,
+            impressions=impressions,
+            search_sources={item.source for item in search},
+        )
         return SeoPageScore(
             page_id=page.id,
             business_id=business.id if business else None,
             business_name=business.name if business else None,
             slug=page.slug,
             title=page.title,
-            url=urljoin(settings.public_base_url.rstrip("/") + "/", f"p/{page.slug}"),
+            url=page_url,
             technical_score=technical_score,
             content_score=content_score,
             search_score=search_score,
@@ -389,7 +421,127 @@ class SeoAnalyticsAgent:
             conversion_rate=round(conversion_rate, 2),
             diagnosis=diagnosis,
             next_action=action,
+            metric_sources={
+                "technical_score": "App calculation",
+                "content_score": "App calculation",
+                "search_score": search_source,
+                "conversion_score": f"{analytics_source} + App DB",
+                "overall_score": "App calculation",
+                "impressions": search_source,
+                "clicks": search_source,
+                "ctr": search_source,
+                "average_position": search_source,
+                "sessions": analytics_source,
+                "engaged_sessions": analytics_source,
+                "leads": "App DB",
+                "conversion_rate": f"{analytics_source} + App DB",
+            },
+            first_party_events=first_party_events,
+            google_index_status=google_index_status,
         )
+
+    def _first_party_event_summary(
+        self, db: Session, page: LandingPage
+    ) -> dict[str, object]:
+        rows = (
+            db.query(PageEvent.event_type, func.count(PageEvent.id), func.max(PageEvent.created_at))
+            .filter(PageEvent.page_id == page.id)
+            .group_by(PageEvent.event_type)
+            .all()
+        )
+        counts = {event_type: int(count or 0) for event_type, count, _ in rows}
+        last_event_at = max(
+            (last_seen for _, _, last_seen in rows if last_seen is not None), default=None
+        )
+        leads = db.query(func.count(Lead.id)).filter(Lead.page_id == page.id).scalar() or 0
+        return {
+            "page_views": counts.get("page_view", 0),
+            "cta_clicks": counts.get("cta_click", 0),
+            "form_starts": counts.get("form_start", 0),
+            "form_submits": counts.get("form_submit", 0),
+            "leads": leads,
+            "last_event_at": last_event_at,
+            "metric_sources": {
+                "page_views": "App events",
+                "cta_clicks": "App events",
+                "form_starts": "App events",
+                "form_submits": "App events",
+                "leads": "App DB",
+            },
+        }
+
+    def _google_index_status(
+        self,
+        db: Session,
+        settings: Settings,
+        page: LandingPage,
+        *,
+        page_url: str,
+        impressions: int,
+        search_sources: set[str],
+    ) -> dict[str, object]:
+        connection = (
+            db.query(SeoIntegrationConnection)
+            .filter(SeoIntegrationConnection.provider == "google_search_console")
+            .order_by(SeoIntegrationConnection.updated_at.desc())
+            .first()
+        )
+        has_live_gsc = "google_search_console" in search_sources
+        if has_live_gsc and impressions > 0:
+            status = "google_data_detected"
+            status_label = "Google performance data detected"
+            source = "Live Google Search Console"
+        elif connection and connection.status == "live_synced":
+            status = "synced_no_impressions"
+            status_label = "Synced; no Google impressions detected"
+            source = "Live Google Search Console"
+        elif connection and connection.status == "error":
+            status = "sync_error"
+            status_label = "Search Console sync needs attention"
+            source = "Integration status"
+        else:
+            status = "awaiting_search_console_sync"
+            status_label = "Awaiting live Search Console confirmation"
+            source = "Integration status"
+
+        property_ref = settings.google_search_console_site_url or settings.public_base_url
+        inspect_url = (
+            "https://search.google.com/search-console/inspect?"
+            f"resource_id={quote(property_ref, safe='')}&id={quote(page_url, safe='')}"
+        )
+        return {
+            "status": status,
+            "status_label": status_label,
+            "status_source": source,
+            "search_console_inspect_url": inspect_url,
+            "sitemap_url": f"{settings.public_base_url.rstrip('/')}/sitemap.xml",
+            "in_sitemap": page.status == "published",
+            "sitemap_source": "App-generated sitemap",
+            "last_synced_at": connection.last_sync_at if connection else None,
+            "last_sync_status": connection.status if connection else "not_synced",
+            "manual_guidance": (
+                "Open URL Inspection, run Test Live URL, then use Request Indexing. Google controls "
+                "crawl and indexing timing; this portal does not promise or automate acceptance."
+            ),
+        }
+
+    @staticmethod
+    def _metric_source(sources: set[str], *, fallback: str) -> str:
+        labels = {
+            "google_search_console": "Live Google Search Console",
+            "ga4": "Live GA4",
+            "first_party": "App events",
+            "demo_until_gsc_ga4_connected": "Demo fallback",
+        }
+        resolved = [labels.get(source, source.replace("_", " ").title()) for source in sorted(sources)]
+        return " + ".join(resolved) if resolved else fallback
+
+    @staticmethod
+    def _overview_source(scores: list[SeoPageScore], key: str) -> str:
+        sources = sorted({score.metric_sources[key] for score in scores})
+        if not sources:
+            return "Waiting for data"
+        return sources[0] if len(sources) == 1 else "Mixed page sources"
 
     def record_recommendation_run(
         self, db: Session, campaign: Campaign | None, *, pages: int, recommendations: int
@@ -583,11 +735,12 @@ class SeoAnalyticsAgent:
             func.sum(SeoSearchMetric.impressions),
             func.sum(SeoSearchMetric.clicks),
             func.avg(SeoSearchMetric.average_position),
+            SeoSearchMetric.source,
         )
         if self._live_google_synced(db):
             query = query.filter(SeoSearchMetric.source == "google_search_console")
         rows = (
-            query.group_by(SeoSearchMetric.query)
+            query.group_by(SeoSearchMetric.query, SeoSearchMetric.source)
             .order_by(func.sum(SeoSearchMetric.clicks).desc())
             .limit(8)
             .all()
@@ -598,6 +751,7 @@ class SeoAnalyticsAgent:
                 "impressions": int(row[1] or 0),
                 "clicks": int(row[2] or 0),
                 "average_position": round(float(row[3] or 0), 2),
+                "source": self._metric_source({row[4]}, fallback="Waiting for data"),
             }
             for row in rows
         ]

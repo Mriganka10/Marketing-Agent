@@ -172,6 +172,80 @@ def test_seo_analytics_sync_sitemap_and_structured_public_page(client):
     assert overview["top_queries"]
 
 
+def test_seo_overview_exposes_sources_app_events_and_index_helper(client):
+    business_id = client.post(
+        "/api/businesses",
+        json={
+            "name": "Source Label Labs",
+            "website": "https://sourcelabels.example",
+            "industry": "SEO analytics",
+            "audience": "Marketing teams that need trustworthy page-level reporting",
+            "value_proposition": "We separate first-party, Google, and fallback marketing data.",
+        },
+    ).json()["id"]
+    campaign_id = client.post(
+        "/api/campaigns",
+        json={
+            "business_id": business_id,
+            "name": "Metric provenance",
+            "goal": "Generate qualified analytics implementation leads.",
+        },
+    ).json()["id"]
+    page = client.post(
+        "/api/runs", json={"campaign_id": campaign_id, "publish_pages": True}
+    ).json()["pages"][0]
+
+    for event_type in ["page_view", "page_view", "cta_click", "form_start", "form_submit"]:
+        response = client.post(
+            "/api/events",
+            json={
+                "page_id": page["id"],
+                "campaign_id": campaign_id,
+                "event_type": event_type,
+                "session_id": "first-party-session",
+                "path": f"/p/{page['slug']}",
+            },
+        )
+        assert response.status_code == 200
+    lead = client.post(
+        "/api/leads",
+        json={
+            "campaign_id": campaign_id,
+            "page_id": page["id"],
+            "name": "First Party Lead",
+            "email": "lead@example.com",
+            "company": "Source Label Labs",
+        },
+    )
+    assert lead.status_code == 200
+    assert client.post("/api/seo/sync").status_code == 200
+
+    overview = client.get("/api/seo/overview").json()
+    score = next(item for item in overview["page_scores"] if item["page_id"] == page["id"])
+    events = score["first_party_events"]
+    index = score["google_index_status"]
+
+    assert events["page_views"] == 2
+    assert events["cta_clicks"] == 1
+    assert events["form_starts"] == 1
+    assert events["form_submits"] == 1
+    assert events["leads"] == 1
+    assert events["metric_sources"]["page_views"] == "App events"
+    assert events["metric_sources"]["leads"] == "App DB"
+    assert "Demo fallback" in score["metric_sources"]["impressions"]
+    assert "App events" in score["metric_sources"]["sessions"]
+    assert score["metric_sources"]["leads"] == "App DB"
+    assert overview["metric_sources"]["organic_impressions"] == "Demo fallback"
+    assert overview["indexed_pages"] == 0
+    assert index["status"] == "awaiting_search_console_sync"
+    assert index["in_sitemap"] is True
+    assert index["sitemap_url"].endswith("/sitemap.xml")
+    assert "search.google.com/search-console/inspect" in index["search_console_inspect_url"]
+    assert index["last_synced_at"] is not None
+    assert "Request Indexing" in index["manual_guidance"]
+    assert overview["top_queries"][0]["source"] == "Demo fallback"
+
+
 def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     from datetime import date
 
@@ -247,6 +321,11 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     assert any(item["query"] == "automated seo agents" for item in overview["top_queries"])
     assert overview["organic_impressions"] == 240
     assert overview["sessions"] == 33
+    live_page = next(item for item in overview["page_scores"] if item["page_id"] == page["id"])
+    assert live_page["metric_sources"]["impressions"] == "Live Google Search Console"
+    assert live_page["metric_sources"]["sessions"] == "Live GA4"
+    assert live_page["google_index_status"]["status"] == "google_data_detected"
+    assert overview["indexed_pages"] == 1
 
 
 def test_seo_sync_preserves_google_error_status(client, monkeypatch):
