@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from statistics import mean
 from urllib.parse import quote, urljoin, urlparse
 
@@ -18,6 +18,7 @@ from app.integrations.google_marketing import (
 from app.models.entities import (
     AnalyticsPageMetric,
     Campaign,
+    GoogleAnalyticsEventMetric,
     LandingPage,
     Lead,
     PageEvent,
@@ -212,16 +213,24 @@ class SeoAnalyticsAgent:
         pages = db.query(LandingPage).filter(LandingPage.status == "published").all()
         page_by_url = {self._canonical_url(settings, page): page for page in pages}
         page_by_path = {f"/p/{page.slug}": page for page in pages}
-        metric_date = datetime.combine(data.end_date, datetime.min.time())
+        range_start = datetime.combine(data.start_date, datetime.min.time())
+        range_end = datetime.combine(data.end_date, datetime.min.time())
         records = 0
 
         db.query(SeoSearchMetric).filter(
-            SeoSearchMetric.date == metric_date,
-            SeoSearchMetric.source == "google_search_console",
+            SeoSearchMetric.source.in_(["google_search_console", "google_search_console_query"]),
+            SeoSearchMetric.date >= range_start,
+            SeoSearchMetric.date <= range_end,
         ).delete()
         db.query(AnalyticsPageMetric).filter(
-            AnalyticsPageMetric.date == metric_date,
             AnalyticsPageMetric.source == "ga4",
+            AnalyticsPageMetric.date >= range_start,
+            AnalyticsPageMetric.date <= range_end,
+        ).delete()
+        db.query(GoogleAnalyticsEventMetric).filter(
+            GoogleAnalyticsEventMetric.source == "ga4",
+            GoogleAnalyticsEventMetric.date >= range_start,
+            GoogleAnalyticsEventMetric.date <= range_end,
         ).delete()
 
         for row in data.search_rows:
@@ -231,8 +240,8 @@ class SeoAnalyticsAgent:
             db.add(
                 SeoSearchMetric(
                     page_id=page.id,
-                    date=metric_date,
-                    query=row.query[:255],
+                    date=datetime.combine(row.date, datetime.min.time()),
+                    query="",
                     country=row.country[:80],
                     device=row.device[:40],
                     impressions=row.impressions,
@@ -244,6 +253,26 @@ class SeoAnalyticsAgent:
             )
             records += 1
 
+        for row in data.search_query_rows:
+            page = page_by_url.get(row.page_url.rstrip("/")) or page_by_path.get(urlparse(row.page_url).path)
+            if not page:
+                continue
+            db.add(
+                SeoSearchMetric(
+                    page_id=page.id,
+                    date=range_end,
+                    query=row.query[:255],
+                    country=row.country[:80],
+                    device=row.device[:40],
+                    impressions=row.impressions,
+                    clicks=row.clicks,
+                    ctr=row.ctr,
+                    average_position=row.position,
+                    source="google_search_console_query",
+                )
+            )
+            records += 1
+
         for row in data.analytics_rows:
             page = page_by_path.get(row.path.rstrip("/")) or page_by_path.get(row.path)
             if not page:
@@ -251,16 +280,31 @@ class SeoAnalyticsAgent:
             db.add(
                 AnalyticsPageMetric(
                     page_id=page.id,
-                    date=metric_date,
+                    date=datetime.combine(row.date, datetime.min.time()),
                     sessions=row.sessions,
                     engaged_sessions=row.engaged_sessions,
                     cta_clicks=0,
                     form_starts=0,
-                    form_submits=row.conversions,
+                    form_submits=0,
                     scroll_75=0,
                     traffic_source=row.traffic_source[:120],
                     device=row.device[:40],
                     country=row.country[:80],
+                    source="ga4",
+                )
+            )
+            records += 1
+
+        for row in data.analytics_event_rows:
+            page = page_by_path.get(row.path.rstrip("/")) or page_by_path.get(row.path)
+            if not page:
+                continue
+            db.add(
+                GoogleAnalyticsEventMetric(
+                    page_id=page.id,
+                    date=datetime.combine(row.date, datetime.min.time()),
+                    event_name=row.event_name[:120],
+                    event_count=row.event_count,
                     source="ga4",
                 )
             )
@@ -275,6 +319,7 @@ class SeoAnalyticsAgent:
                 "start_date": data.start_date.isoformat(),
                 "end_date": data.end_date.isoformat(),
                 "rows": len(data.search_rows),
+                "query_rows": len(data.search_query_rows),
             },
         )
         self._upsert_connection(
@@ -286,6 +331,7 @@ class SeoAnalyticsAgent:
                 "start_date": data.start_date.isoformat(),
                 "end_date": data.end_date.isoformat(),
                 "rows": len(data.analytics_rows),
+                "event_rows": len(data.analytics_event_rows),
             },
         )
         return {
@@ -297,7 +343,9 @@ class SeoAnalyticsAgent:
                 "end": data.end_date.isoformat(),
             },
             "search_console_rows": len(data.search_rows),
+            "search_console_query_rows": len(data.search_query_rows),
             "ga4_rows": len(data.analytics_rows),
+            "ga4_event_rows": len(data.analytics_event_rows),
         }
 
     def overview(self, db: Session, settings: Settings) -> SeoOverview:
@@ -543,6 +591,199 @@ class SeoAnalyticsAgent:
             return "Waiting for data"
         return sources[0] if len(sources) == 1 else "Mixed page sources"
 
+    def google_reports(self, db: Session, settings: Settings) -> dict[str, object]:
+        pages = db.query(LandingPage).filter(LandingPage.status == "published").all()
+        gsc_connection = self._latest_connection(db, "google_search_console")
+        ga4_connection = self._latest_connection(db, "ga4")
+        start_date, end_date = self._report_range(gsc_connection or ga4_connection)
+        start_at = datetime.combine(start_date, datetime.min.time())
+        end_at = datetime.combine(end_date, datetime.max.time())
+
+        search_rows = db.query(SeoSearchMetric).filter(
+            SeoSearchMetric.source == "google_search_console",
+            SeoSearchMetric.date >= start_at,
+            SeoSearchMetric.date <= end_at,
+        ).all()
+        analytics_rows = db.query(AnalyticsPageMetric).filter(
+            AnalyticsPageMetric.source == "ga4",
+            AnalyticsPageMetric.date >= start_at,
+            AnalyticsPageMetric.date <= end_at,
+        ).all()
+        event_rows = db.query(GoogleAnalyticsEventMetric).filter(
+            GoogleAnalyticsEventMetric.source == "ga4",
+            GoogleAnalyticsEventMetric.date >= start_at,
+            GoogleAnalyticsEventMetric.date <= end_at,
+        ).all()
+
+        search_daily: dict[str, dict[str, float]] = {}
+        search_pages: dict[str, dict[str, float]] = {}
+        search_page_daily: dict[str, dict[str, dict[str, int]]] = {}
+        for row in search_rows:
+            day = row.date.date().isoformat()
+            daily = search_daily.setdefault(day, {"impressions": 0, "clicks": 0, "position_total": 0, "position_weight": 0})
+            page = search_pages.setdefault(row.page_id, {"impressions": 0, "clicks": 0, "position_total": 0, "position_weight": 0})
+            for target in (daily, page):
+                target["impressions"] += row.impressions
+                target["clicks"] += row.clicks
+                weight = max(row.impressions, 1)
+                target["position_total"] += row.average_position * weight
+                target["position_weight"] += weight
+            page_day = search_page_daily.setdefault(row.page_id, {}).setdefault(
+                day, {"impressions": 0, "clicks": 0}
+            )
+            page_day["impressions"] += row.impressions
+            page_day["clicks"] += row.clicks
+
+        page_sessions: dict[str, int] = {}
+        for row in analytics_rows:
+            page_sessions[row.page_id] = page_sessions.get(row.page_id, 0) + row.sessions
+        page_events: dict[str, dict[str, int]] = {}
+        event_totals: dict[str, int] = {}
+        event_daily: dict[str, dict[str, int]] = {}
+        event_page_daily: dict[str, dict[str, dict[str, int]]] = {}
+        for row in event_rows:
+            page_counts = page_events.setdefault(row.page_id, {})
+            page_counts[row.event_name] = page_counts.get(row.event_name, 0) + row.event_count
+            event_totals[row.event_name] = event_totals.get(row.event_name, 0) + row.event_count
+            day_counts = event_daily.setdefault(row.date.date().isoformat(), {})
+            day_counts[row.event_name] = day_counts.get(row.event_name, 0) + row.event_count
+            page_day_counts = event_page_daily.setdefault(row.page_id, {}).setdefault(
+                row.date.date().isoformat(), {}
+            )
+            page_day_counts[row.event_name] = page_day_counts.get(row.event_name, 0) + row.event_count
+
+        lead_counts = dict(
+            db.query(Lead.page_id, func.count(Lead.id))
+            .filter(Lead.page_id.isnot(None))
+            .group_by(Lead.page_id)
+            .all()
+        )
+        qualified_counts = dict(
+            db.query(Lead.page_id, func.count(Lead.id))
+            .filter(Lead.page_id.isnot(None), Lead.status == "qualified")
+            .group_by(Lead.page_id)
+            .all()
+        )
+
+        report_pages = []
+        for page in pages:
+            search = search_pages.get(page.id, {})
+            events = page_events.get(page.id, {})
+            impressions = int(search.get("impressions", 0))
+            clicks = int(search.get("clicks", 0))
+            report_pages.append({
+                "page_id": page.id,
+                "title": page.title,
+                "business": page.campaign.business.name if page.campaign and page.campaign.business else "Unknown company",
+                "url": self._canonical_url(settings, page),
+                "impressions": impressions,
+                "clicks": clicks,
+                "ctr": round((clicks / impressions) * 100, 2) if impressions else 0,
+                "average_position": round(search.get("position_total", 0) / search.get("position_weight", 1), 2) if search else 0,
+                "sessions": page_sessions.get(page.id, 0),
+                "events": events,
+                "accepted_leads": int(lead_counts.get(page.id, 0)),
+                "qualified_leads": int(qualified_counts.get(page.id, 0)),
+                "search_daily": [
+                    {"date": day, **counts}
+                    for day, counts in sorted(search_page_daily.get(page.id, {}).items())
+                ],
+                "event_daily": [
+                    {
+                        "date": day,
+                        "page_views": counts.get("page_view", 0),
+                        "form_submits": counts.get("form_submit", 0),
+                    }
+                    for day, counts in sorted(event_page_daily.get(page.id, {}).items())
+                ],
+            })
+
+        total_impressions = sum(int(row.impressions) for row in search_rows)
+        total_clicks = sum(int(row.clicks) for row in search_rows)
+        position_weight = sum(max(row.impressions, 1) for row in search_rows)
+        weighted_position = sum(
+            row.average_position * max(row.impressions, 1) for row in search_rows
+        )
+        return {
+            "mode": self.integration_status(db, settings)["mode"],
+            "date_range": {"start": start_date.isoformat(), "end": end_date.isoformat()},
+            "last_synced_at": max(
+                (item.last_sync_at for item in (gsc_connection, ga4_connection) if item and item.last_sync_at),
+                default=None,
+            ),
+            "schedule": {
+                "enabled": settings.google_sync_schedule_enabled,
+                "time": settings.google_sync_schedule_time,
+                "timezone": settings.google_sync_schedule_timezone,
+                "label": f"Daily at {settings.google_sync_schedule_time} {settings.google_sync_schedule_timezone}",
+            },
+            "search_console": {
+                "totals": {
+                    "impressions": total_impressions,
+                    "clicks": total_clicks,
+                    "ctr": round((total_clicks / total_impressions) * 100, 2) if total_impressions else 0,
+                    "average_position": round(weighted_position / position_weight, 2)
+                    if position_weight
+                    else 0,
+                },
+                "daily": [
+                    {
+                        "date": day,
+                        "impressions": int(values["impressions"]),
+                        "clicks": int(values["clicks"]),
+                    }
+                    for day, values in sorted(search_daily.items())
+                ],
+                "pages": sorted(report_pages, key=lambda item: (item["impressions"], item["clicks"]), reverse=True),
+                "top_queries": self._top_queries(db),
+                "privacy_note": "Page totals are authoritative. Low-volume queries may be withheld by Google.",
+                "source": "Google Search Console",
+            },
+            "ga4": {
+                "totals": {
+                    "page_views": event_totals.get("page_view", 0),
+                    "sessions": sum(page_sessions.values()),
+                    "cta_clicks": event_totals.get("cta_click", 0),
+                    "form_starts": event_totals.get("form_start", 0),
+                    "form_submits": event_totals.get("form_submit", 0),
+                },
+                "daily": [
+                    {
+                        "date": day,
+                        "page_views": values.get("page_view", 0),
+                        "form_submits": values.get("form_submit", 0),
+                    }
+                    for day, values in sorted(event_daily.items())
+                ],
+                "events": [
+                    {"event_name": name, "event_count": count, "source": "Google Analytics"}
+                    for name, count in sorted(event_totals.items(), key=lambda item: item[1], reverse=True)
+                ],
+                "pages": report_pages,
+                "source": "Google Analytics",
+            },
+        }
+
+    @staticmethod
+    def _latest_connection(db: Session, provider: str) -> SeoIntegrationConnection | None:
+        return db.query(SeoIntegrationConnection).filter(
+            SeoIntegrationConnection.provider == provider
+        ).order_by(SeoIntegrationConnection.updated_at.desc()).first()
+
+    @staticmethod
+    def _report_range(connection: SeoIntegrationConnection | None) -> tuple[date, date]:
+        fallback_end = datetime.now().date() - timedelta(days=2)
+        fallback_start = fallback_end - timedelta(days=27)
+        if not connection or not connection.config:
+            return fallback_start, fallback_end
+        try:
+            return (
+                date.fromisoformat(str(connection.config["start_date"])),
+                date.fromisoformat(str(connection.config["end_date"])),
+            )
+        except (KeyError, TypeError, ValueError):
+            return fallback_start, fallback_end
+
     def record_recommendation_run(
         self, db: Session, campaign: Campaign | None, *, pages: int, recommendations: int
     ) -> None:
@@ -738,7 +979,7 @@ class SeoAnalyticsAgent:
             SeoSearchMetric.source,
         )
         if self._live_google_synced(db):
-            query = query.filter(SeoSearchMetric.source == "google_search_console")
+            query = query.filter(SeoSearchMetric.source == "google_search_console_query")
         rows = (
             query.group_by(SeoSearchMetric.query, SeoSearchMetric.source)
             .order_by(func.sum(SeoSearchMetric.clicks).desc())

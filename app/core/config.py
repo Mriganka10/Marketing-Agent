@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     ga4_property_id: str | None = None
     google_search_console_site_url: str | None = None
     google_service_account_json: str | None = None
+    google_sync_schedule_enabled: bool = True
+    google_sync_schedule_time: str = "08:30"
+    google_sync_schedule_timezone: str = "Asia/Kolkata"
     dataforseo_enabled: bool = False
     dataforseo_login: str | None = None
     dataforseo_password: str | None = None

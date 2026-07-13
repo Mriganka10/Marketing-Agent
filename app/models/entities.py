@@ -88,6 +88,7 @@ class LandingPage(Base):
     leads: Mapped[list["Lead"]] = relationship(back_populates="page")
     search_metrics: Mapped[list["SeoSearchMetric"]] = relationship(back_populates="page")
     analytics_metrics: Mapped[list["AnalyticsPageMetric"]] = relationship(back_populates="page")
+    google_event_metrics: Mapped[list["GoogleAnalyticsEventMetric"]] = relationship(back_populates="page")
     events: Mapped[list["PageEvent"]] = relationship(back_populates="page")
     refresh_versions: Mapped[list["PageRefreshVersion"]] = relationship(back_populates="page")
 
@@ -222,6 +223,20 @@ class AnalyticsPageMetric(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     page: Mapped[LandingPage] = relationship(back_populates="analytics_metrics")
+
+
+class GoogleAnalyticsEventMetric(Base):
+    __tablename__ = "google_analytics_event_metrics"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    page_id: Mapped[str] = mapped_column(ForeignKey("landing_pages.id"), nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    event_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    event_count: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(80), default="ga4")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    page: Mapped[LandingPage] = relationship(back_populates="google_event_metrics")
 
 
 class PageEvent(Base):

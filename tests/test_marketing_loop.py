@@ -252,7 +252,12 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     from datetime import date
 
     from app.core.config import get_settings
-    from app.integrations.google_marketing import GA4PageRow, GoogleMarketingData, SearchConsoleRow
+    from app.integrations.google_marketing import (
+        GA4EventRow,
+        GA4PageRow,
+        GoogleMarketingData,
+        SearchConsoleRow,
+    )
 
     monkeypatch.setenv("GA4_PROPERTY_ID", "153293282")
     monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "https://agenticgrowthlabs.com/")
@@ -287,10 +292,24 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
             end_date=date(2026, 7, 5),
             search_rows=[
                 SearchConsoleRow(
+                    date=date(2026, 7, 5),
+                    page_url=f"https://agenticgrowthlabs.com/p/{page['slug']}",
+                    query="",
+                    country="ALL",
+                    device="ALL",
+                    clicks=12,
+                    impressions=240,
+                    ctr=0.05,
+                    position=4.2,
+                )
+            ],
+            search_query_rows=[
+                SearchConsoleRow(
+                    date=date(2026, 7, 5),
                     page_url=f"https://agenticgrowthlabs.com/p/{page['slug']}",
                     query="automated seo agents",
-                    country="IN",
-                    device="DESKTOP",
+                    country="ALL",
+                    device="ALL",
                     clicks=12,
                     impressions=240,
                     ctr=0.05,
@@ -299,15 +318,40 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
             ],
             analytics_rows=[
                 GA4PageRow(
+                    date=date(2026, 7, 5),
                     path=f"/p/{page['slug']}",
                     sessions=33,
                     engaged_sessions=24,
-                    event_count=80,
-                    conversions=3,
                     traffic_source="Organic Search",
                     device="DESKTOP",
                     country="India",
                 )
+            ],
+            analytics_event_rows=[
+                GA4EventRow(
+                    date=date(2026, 7, 5),
+                    path=f"/p/{page['slug']}",
+                    event_name="page_view",
+                    event_count=80,
+                ),
+                GA4EventRow(
+                    date=date(2026, 7, 5),
+                    path=f"/p/{page['slug']}",
+                    event_name="cta_click",
+                    event_count=4,
+                ),
+                GA4EventRow(
+                    date=date(2026, 7, 5),
+                    path=f"/p/{page['slug']}",
+                    event_name="form_start",
+                    event_count=5,
+                ),
+                GA4EventRow(
+                    date=date(2026, 7, 5),
+                    path=f"/p/{page['slug']}",
+                    event_name="form_submit",
+                    event_count=3,
+                ),
             ],
         )
 
@@ -316,7 +360,7 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     sync = client.post("/api/seo/sync")
     assert sync.status_code == 200
     assert sync.json()["mode"] == "live_google_integrated"
-    assert sync.json()["records_written"] == 2
+    assert sync.json()["records_written"] == 7
 
     overview = client.get("/api/seo/overview").json()
     assert overview["integration_status"]["mode"] == "live_google_integrated"
@@ -328,6 +372,16 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     assert live_page["metric_sources"]["sessions"] == "Live GA4"
     assert live_page["google_index_status"]["status"] == "google_data_detected"
     assert overview["indexed_pages"] == 1
+
+    reports = client.get("/api/google-reports").json()
+    assert reports["search_console"]["totals"]["impressions"] == 240
+    assert reports["search_console"]["totals"]["clicks"] == 12
+    assert reports["ga4"]["totals"]["sessions"] == 33
+    event_counts = {
+        event["event_name"]: event["event_count"] for event in reports["ga4"]["events"]
+    }
+    assert event_counts["page_view"] == 80
+    assert event_counts["form_submit"] == 3
 
 
 def test_seo_sync_preserves_google_error_status(client, monkeypatch):

@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=seo-sources-events-indexing-20260713-1" />
-  <link rel="stylesheet" href="/static/redesign.css?v=portal-redesign-20260713-1" />
+  <link rel="stylesheet" href="/static/styles.css?v=google-reports-20260713-1" />
+  <link rel="stylesheet" href="/static/redesign.css?v=google-reports-20260713-1" />
 </head>
 <body>
   <div class="app-shell">
@@ -24,6 +24,7 @@
         <a href="#growth" data-route="growth"><span class="nav-icon" aria-hidden="true">✦</span><span>Growth Suite</span></a>
         <a href="#launch" data-route="launch"><span class="nav-icon" aria-hidden="true">↗</span><span>Launch</span></a>
         <a href="#seo" data-route="seo"><span class="nav-icon" aria-hidden="true">⌁</span><span>SEO Analytics</span></a>
+        <a href="#google" data-route="google"><span class="nav-icon" aria-hidden="true">G</span><span>Google Reports</span></a>
         <a href="#pages" data-route="pages"><span class="nav-icon" aria-hidden="true">▤</span><span>Pages</span></a>
         <a href="#activity" data-route="activity"><span class="nav-icon" aria-hidden="true">◷</span><span>Activity</span></a>
       </nav>
@@ -282,6 +283,92 @@
         </div>
       </section>
 
+      <section id="google" class="route-view google-reports">
+        <div class="google-report-header">
+          <div>
+            <p class="eyebrow">Live Google intelligence</p>
+            <h1>Google Reports</h1>
+            <p class="header-copy">Authoritative Search Console performance and GA4 behavior, kept separate from verified application leads.</p>
+          </div>
+          <div class="google-report-controls">
+            <label>Landing page<select id="google-page-filter"><option value="all">All landing pages</option></select></label>
+            <div class="google-date-control"><small>Date range</small><strong id="google-date-range">Loading</strong></div>
+            <button id="sync-google-reports" type="button"><span aria-hidden="true">↻</span> Sync Google now</button>
+          </div>
+        </div>
+
+        <div class="google-report-statusbar">
+          <span class="google-live-chip"><i></i> LIVE GOOGLE DATA</span>
+          <span id="google-last-sync">Last sync pending</span>
+          <span id="google-schedule">Daily schedule pending</span>
+        </div>
+
+        <div class="google-report-tabs" role="tablist" aria-label="Google report type">
+          <button class="google-report-tab active" type="button" data-google-tab="search-console">Search Console</button>
+          <button class="google-report-tab" type="button" data-google-tab="ga4">GA4 Events & Conversions</button>
+        </div>
+
+        <div class="google-report-panel active" id="search-console-report">
+          <div class="report-title-row">
+            <div><p class="eyebrow">Google organic search</p><h2>Google Search Console Report</h2></div>
+            <span class="provider-chip live">● LIVE GOOGLE SEARCH CONSOLE</span>
+          </div>
+          <div class="google-kpi-grid">
+            <article><span class="kpi-icon">◉</span><div><strong id="gsc-impressions">0</strong><small>Impressions</small></div></article>
+            <article><span class="kpi-icon">↗</span><div><strong id="gsc-clicks">0</strong><small>Clicks</small></div></article>
+            <article><span class="kpi-icon">%</span><div><strong id="gsc-ctr">0%</strong><small>CTR</small></div></article>
+            <article><span class="kpi-icon">▥</span><div><strong id="gsc-position">0</strong><small>Avg. position</small></div></article>
+          </div>
+          <article class="google-chart-card">
+            <div class="chart-title"><div><h3>Daily performance</h3><span>Clicks and impressions from Google</span></div><div class="chart-legend"><span><i class="clicks"></i>Clicks</span><span><i class="impressions"></i>Impressions</span></div></div>
+            <div id="gsc-daily-chart" class="line-chart" role="img" aria-label="Daily Search Console clicks and impressions"></div>
+          </article>
+          <article class="google-table-card">
+            <div class="chart-title"><div><h3>Page performance</h3><span>Authoritative page-level totals</span></div><span class="provider-chip">Source: Google Search Console</span></div>
+            <div class="table-wrap"><table><thead><tr><th>Page</th><th>Impressions</th><th>Clicks</th><th>CTR</th><th>Avg. position</th></tr></thead><tbody id="gsc-pages-table"></tbody></table></div>
+          </article>
+          <div class="google-privacy-note"><strong>ⓘ</strong><span id="gsc-privacy-note">Page totals are authoritative. Low-volume queries may be withheld by Google.</span><em>Google Search Console</em></div>
+        </div>
+
+        <div class="google-report-panel" id="ga4-report">
+          <div class="report-title-row">
+            <div><p class="eyebrow">Google behavior analytics</p><h2>GA4 Events & Conversions</h2></div>
+            <span class="provider-chip live">● LIVE GOOGLE ANALYTICS</span>
+          </div>
+          <div class="google-kpi-grid">
+            <article><span class="kpi-icon">◉</span><div><strong id="ga4-pageviews">0</strong><small>Page views</small></div></article>
+            <article><span class="kpi-icon">♙</span><div><strong id="ga4-sessions">0</strong><small>Sessions</small></div></article>
+            <article><span class="kpi-icon">✓</span><div><strong id="ga4-submits">0</strong><small>Form submits</small></div></article>
+            <article><span class="kpi-icon">↗</span><div><strong id="ga4-cta">0</strong><small>CTA clicks</small></div></article>
+          </div>
+          <div class="ga4-primary-grid">
+            <article class="google-chart-card">
+              <div class="chart-title"><div><h3>Conversion funnel</h3><span>Google Analytics events only</span></div></div>
+              <div class="ga4-funnel" id="ga4-funnel"></div>
+            </article>
+            <article class="google-chart-card">
+              <div class="chart-title"><div><h3>Event trend</h3><span>Page views vs form submits</span></div><div class="chart-legend"><span><i class="clicks"></i>Page views</span><span><i class="submits"></i>Form submits</span></div></div>
+              <div id="ga4-event-chart" class="bar-chart" role="img" aria-label="Daily GA4 event trend"></div>
+            </article>
+          </div>
+          <div class="ga4-secondary-grid">
+            <article class="google-comparison-card">
+              <h3>Google analytics vs verified leads</h3>
+              <div class="comparison-columns">
+                <div><span>GA4 events</span><small>Form submits</small><strong id="ga4-compare-submits">0</strong><em>Source: Google Analytics 4</em></div>
+                <b>VS</b>
+                <div><span>Verified App DB</span><small>Accepted leads</small><strong id="app-accepted-leads">0</strong><small><span id="app-qualified-leads">0</span> qualified leads</small><em>Source: App Database</em></div>
+              </div>
+              <p>Google behavior metrics and verified CRM leads are kept separate—never blended into one rate.</p>
+            </article>
+            <article class="google-table-card">
+              <div class="chart-title"><div><h3>All events</h3><span>Event totals for the selected page</span></div></div>
+              <div class="table-wrap"><table><thead><tr><th>Event name</th><th>Event count</th><th>Source</th></tr></thead><tbody id="ga4-events-table"></tbody></table></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section id="launch" class="route-view workspace">
         <div class="panel">
           <div class="panel-head">
@@ -426,6 +513,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=portal-redesign-20260713-1"></script>
+  <script src="/static/app.js?v=google-reports-20260713-1"></script>
 </body>
 </html>

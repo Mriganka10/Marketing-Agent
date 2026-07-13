@@ -368,6 +368,14 @@ def seo_integrations(
     return SeoAnalyticsAgent().integration_status(db, settings)
 
 
+@router.get("/api/google-reports")
+def google_reports(
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> dict[str, object]:
+    return SeoAnalyticsAgent().google_reports(db, settings)
+
+
 @router.post(
     "/api/seo/sync",
     dependencies=[Depends(require_api_key)],

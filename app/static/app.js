@@ -1,11 +1,12 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googlePage: "all", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
-const routes = new Set(["overview", "growth", "launch", "seo", "pages", "activity"]);
+const routes = new Set(["overview", "growth", "launch", "seo", "google", "pages", "activity"]);
 const routeTitles = {
   overview: "Command center",
   growth: "Growth suite",
   launch: "Launch workspace",
   seo: "SEO intelligence",
+  google: "Google reports",
   pages: "Content operations",
   activity: "Activity control room",
 };
@@ -174,6 +175,12 @@ async function loadSeoOverview() {
   renderActivityEvents(state.seo.page_scores);
 }
 
+async function loadGoogleReports() {
+  state.googleReports = await api("/api/google-reports");
+  renderGooglePageFilter();
+  renderGoogleReports();
+}
+
 function setMetricSource(selector, source) {
   const element = $(selector);
   if (!element) return;
@@ -323,16 +330,6 @@ function renderSeoPages(items) {
         </div>
         <a class="button-link" href="${escapeHtml(page.url)}" target="_blank" rel="noreferrer">Open page</a>
       </div>
-      <div class="seo-report-metrics">
-        <span><small>Google impressions</small><strong>${page.impressions.toLocaleString()}</strong>${sourceBadge(page.metric_sources.impressions)}</span>
-        <span><small>Google clicks</small><strong>${page.clicks.toLocaleString()}</strong>${sourceBadge(page.metric_sources.clicks)}</span>
-        <span><small>CTR</small><strong>${Number(page.ctr).toFixed(2)}%</strong>${sourceBadge(page.metric_sources.ctr)}</span>
-        <span><small>Average position</small><strong>${Number(page.average_position).toFixed(1)}</strong>${sourceBadge(page.metric_sources.average_position)}</span>
-        <span><small>Sessions</small><strong>${page.sessions.toLocaleString()}</strong>${sourceBadge(page.metric_sources.sessions)}</span>
-        <span><small>Leads</small><strong>${page.leads.toLocaleString()}</strong>${sourceBadge(page.metric_sources.leads)}</span>
-        <span><small>Conversion rate</small><strong>${Number(page.conversion_rate).toFixed(1)}%</strong>${sourceBadge(page.metric_sources.conversion_rate)}</span>
-      </div>
-      ${renderFirstPartyFunnel(page)}
       ${renderIndexHelper(page)}
       <div class="seo-report-action">
         <span>${escapeHtml(page.diagnosis)}</span>
@@ -340,6 +337,111 @@ function renderSeoPages(items) {
       </div>
     </article>
   `).join("") : `<p class="empty">Run a campaign and sync SEO metrics to populate page scores.</p>`;
+}
+
+function renderGooglePageFilter() {
+  const select = $("#google-page-filter");
+  const pages = state.googleReports?.search_console?.pages || [];
+  select.innerHTML = `<option value="all">All landing pages</option>${pages.map((page) => (
+    `<option value="${escapeHtml(page.page_id)}">${escapeHtml(page.business)} · ${escapeHtml(formatPath(page.url))}</option>`
+  )).join("")}`;
+  if (pages.some((page) => page.page_id === state.googlePage)) select.value = state.googlePage;
+  else state.googlePage = "all";
+}
+
+function selectedGooglePage() {
+  if (state.googlePage === "all") return null;
+  return state.googleReports?.search_console?.pages?.find((page) => page.page_id === state.googlePage) || null;
+}
+
+function renderGoogleReports() {
+  const report = state.googleReports;
+  if (!report) return;
+  const selected = selectedGooglePage();
+  const searchTotals = selected ? {
+    impressions: selected.impressions,
+    clicks: selected.clicks,
+    ctr: selected.ctr,
+    average_position: selected.average_position,
+  } : report.search_console.totals;
+  const searchDaily = selected ? selected.search_daily : report.search_console.daily;
+  const pages = selected ? [selected] : report.search_console.pages;
+  const gaTotals = selected ? {
+    page_views: selected.events.page_view || 0,
+    sessions: selected.sessions || 0,
+    cta_clicks: selected.events.cta_click || 0,
+    form_starts: selected.events.form_start || 0,
+    form_submits: selected.events.form_submit || 0,
+  } : report.ga4.totals;
+  const gaDaily = selected ? selected.event_daily : report.ga4.daily;
+  const eventRows = selected
+    ? Object.entries(selected.events).map(([event_name, event_count]) => ({ event_name, event_count, source: "Google Analytics" })).sort((a, b) => b.event_count - a.event_count)
+    : report.ga4.events;
+  const acceptedLeads = selected ? selected.accepted_leads : report.ga4.pages.reduce((sum, page) => sum + page.accepted_leads, 0);
+  const qualifiedLeads = selected ? selected.qualified_leads : report.ga4.pages.reduce((sum, page) => sum + page.qualified_leads, 0);
+
+  $("#google-date-range").textContent = `${shortDate(report.date_range.start)} – ${shortDate(report.date_range.end)}`;
+  $("#google-last-sync").textContent = `Last synced ${formatDate(report.last_synced_at)}`;
+  $("#google-schedule").textContent = report.schedule.enabled ? report.schedule.label : "Automatic sync disabled";
+  $("#gsc-impressions").textContent = Number(searchTotals.impressions).toLocaleString();
+  $("#gsc-clicks").textContent = Number(searchTotals.clicks).toLocaleString();
+  $("#gsc-ctr").textContent = `${Number(searchTotals.ctr).toFixed(1)}%`;
+  $("#gsc-position").textContent = Number(searchTotals.average_position).toFixed(1);
+  $("#gsc-daily-chart").innerHTML = lineChart(searchDaily, "clicks", "impressions");
+  $("#gsc-pages-table").innerHTML = pages.length ? pages.map((page) => `
+    <tr><td><strong>${escapeHtml(page.title)}</strong><small>${escapeHtml(formatPath(page.url))}</small></td><td>${Number(page.impressions).toLocaleString()}</td><td>${Number(page.clicks).toLocaleString()}</td><td>${Number(page.ctr).toFixed(1)}%</td><td>${Number(page.average_position).toFixed(1)}</td></tr>
+  `).join("") : `<tr><td colspan="5">No Search Console page totals in this date range.</td></tr>`;
+  $("#gsc-privacy-note").textContent = report.search_console.privacy_note;
+
+  $("#ga4-pageviews").textContent = Number(gaTotals.page_views).toLocaleString();
+  $("#ga4-sessions").textContent = Number(gaTotals.sessions).toLocaleString();
+  $("#ga4-submits").textContent = Number(gaTotals.form_submits).toLocaleString();
+  $("#ga4-cta").textContent = Number(gaTotals.cta_clicks).toLocaleString();
+  renderGa4Funnel(gaTotals);
+  $("#ga4-event-chart").innerHTML = barChart(gaDaily);
+  $("#ga4-compare-submits").textContent = Number(gaTotals.form_submits).toLocaleString();
+  $("#app-accepted-leads").textContent = Number(acceptedLeads).toLocaleString();
+  $("#app-qualified-leads").textContent = Number(qualifiedLeads).toLocaleString();
+  $("#ga4-events-table").innerHTML = eventRows.length ? eventRows.map((event) => `
+    <tr><td><strong>${escapeHtml(event.event_name)}</strong></td><td>${Number(event.event_count).toLocaleString()}</td><td>${sourceBadge(event.source)}</td></tr>
+  `).join("") : `<tr><td colspan="3">No GA4 events in this date range.</td></tr>`;
+}
+
+function shortDate(value) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString([], { day: "numeric", month: "short" });
+}
+
+function lineChart(rows, primaryKey, secondaryKey) {
+  if (!rows?.length) return `<p class="empty">Google data will appear after the next sync.</p>`;
+  const width = 900, height = 220, padX = 42, padY = 24;
+  const max = Math.max(...rows.flatMap((row) => [Number(row[primaryKey]) || 0, Number(row[secondaryKey]) || 0]), 1);
+  const point = (row, index, key) => {
+    const x = padX + (index * (width - padX * 2)) / Math.max(rows.length - 1, 1);
+    const y = height - padY - ((Number(row[key]) || 0) / max) * (height - padY * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  };
+  const labels = rows.filter((_, index) => index === 0 || index === rows.length - 1 || index % Math.max(1, Math.ceil(rows.length / 5)) === 0);
+  return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+    ${[0,1,2,3].map((line) => `<line x1="${padX}" y1="${padY + line * 54}" x2="${width-padX}" y2="${padY + line * 54}" class="grid-line" />`).join("")}
+    <polyline class="chart-line secondary" points="${rows.map((row,index) => point(row,index,secondaryKey)).join(" ")}" />
+    <polyline class="chart-line primary" points="${rows.map((row,index) => point(row,index,primaryKey)).join(" ")}" />
+  </svg><div class="chart-axis">${labels.map((row) => `<span>${escapeHtml(shortDate(row.date))}</span>`).join("")}</div>`;
+}
+
+function barChart(rows) {
+  if (!rows?.length) return `<p class="empty">GA4 events will appear after the next sync.</p>`;
+  const max = Math.max(...rows.flatMap((row) => [Number(row.page_views) || 0, Number(row.form_submits) || 0]), 1);
+  return `<div class="bar-columns">${rows.map((row) => `
+    <div class="bar-column"><div><i style="--height:${Math.max(3,(Number(row.page_views)||0)/max*100)}%"></i><i class="submit" style="--height:${Math.max(3,(Number(row.form_submits)||0)/max*100)}%"></i></div><small>${escapeHtml(shortDate(row.date))}</small></div>
+  `).join("")}</div>`;
+}
+
+function renderGa4Funnel(totals) {
+  const metrics = [["Page views", totals.page_views], ["Form starts", totals.form_starts], ["CTA clicks", totals.cta_clicks], ["Form submits", totals.form_submits]];
+  const baseline = Math.max(Number(totals.page_views) || 0, 1);
+  $("#ga4-funnel").innerHTML = metrics.map(([label, value], index) => `
+    <div><span>${escapeHtml(label)}</span><strong>${Number(value).toLocaleString()}</strong><small>${Math.round((Number(value)/baseline)*100)}%</small><em>GA4</em>${index < metrics.length - 1 ? `<b>→</b>` : ""}</div>
+  `).join("");
 }
 
 function renderFirstPartyFunnel(page) {
@@ -497,7 +599,7 @@ function renderGrowthAgents(agents) {
 
 function sourceTone(source) {
   const value = String(source || "").toLowerCase();
-  if (value.includes("live")) return "live";
+  if (value.includes("live") || value.includes("google analytics") || value.includes("search console")) return "live";
   if (value.includes("app db") || value.includes("app event") || value.includes("audit db")) return "db";
   if (value.includes("ai")) return "ai";
   if (value.includes("fallback") || value.includes("demo")) return "fallback";
@@ -800,7 +902,7 @@ function renderAuditTable(items) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadBusinesses(), loadCampaigns(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGrowthOverview(), loadAdPlans()]);
+  await Promise.all([loadBusinesses(), loadCampaigns(), loadDashboard(), loadPages(), loadLeads(), loadAudit(), loadSeoOverview(), loadGoogleReports(), loadGrowthOverview(), loadAdPlans()]);
 }
 
 $("#mobile-nav-toggle").addEventListener("click", () => {
@@ -905,6 +1007,13 @@ $("#sync-seo").addEventListener("click", async () => {
   });
   toast("SEO metrics synced");
 });
+$("#sync-google-reports").addEventListener("click", async () => {
+  await withProcessing("Syncing Google reports", "Search Console page totals, query details, GA4 sessions, and GA4 events are being refreshed.", async () => {
+    await api("/api/seo/sync", { method: "POST", body: JSON.stringify({}) });
+    await Promise.all([loadGoogleReports(), loadSeoOverview(), loadAudit()]);
+  });
+  toast("Google reports synced");
+});
 $("#sync-growth").addEventListener("click", async () => {
   await withProcessing("Running growth suite", "AI visibility, authority, paid campaign readiness, reporting, workspaces, and refresh approvals are being coordinated.", async () => {
     const query = state.growthBusiness ? `?business_id=${encodeURIComponent(state.growthBusiness)}` : "";
@@ -959,6 +1068,10 @@ $("#seo-business-filter").addEventListener("change", (event) => {
   state.seoBusiness = event.target.value;
   renderSeoPages(filteredSeoPages());
 });
+$("#google-page-filter").addEventListener("change", (event) => {
+  state.googlePage = event.target.value;
+  renderGoogleReports();
+});
 $("#growth-business-filter").addEventListener("change", async (event) => {
   state.growthBusiness = event.target.value;
   localStorage.setItem("growthBusiness", state.growthBusiness);
@@ -978,6 +1091,15 @@ document.querySelectorAll(".tab-button").forEach((button) => {
     document.querySelectorAll(".tab-panel").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     $(`#${button.dataset.tab}-panel`).classList.add("active");
+  });
+});
+
+document.querySelectorAll(".google-report-tab").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".google-report-tab").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".google-report-panel").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    $(`#${button.dataset.googleTab}-report`).classList.add("active");
   });
 });
 
