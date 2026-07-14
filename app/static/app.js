@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googleCompany: "all", googlePage: "all", googlePageQuery: "", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googleCompany: "all", googlePage: "all", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "google", "pages", "activity"]);
 const routeTitles = {
@@ -111,6 +111,7 @@ function setRoute() {
   $("#route-title").textContent = routeTitles[route];
   document.body.classList.remove("nav-open");
   $("#mobile-nav-toggle").setAttribute("aria-expanded", "false");
+  if (route === "google" && state.googleReports) loadGoogleReports().catch((error) => toast(error.message));
 }
 
 async function loadHealth() {
@@ -389,8 +390,6 @@ function applyGoogleCompany(company) {
   state.googleCompany = nextCompany;
   if (changed) {
     state.googlePage = "all";
-    state.googlePageQuery = "";
-    $("#google-page-search").value = "";
   }
   $("#google-company-search").value = nextCompany === "all" ? "" : nextCompany;
   renderGoogleCompanyFilter();
@@ -411,29 +410,17 @@ function resolveGoogleCompanyInput(value, useSingleMatch = false) {
 function renderGooglePageFilter() {
   const select = $("#google-page-filter");
   const pages = googleCompanyPages();
-  const queryTokens = state.googlePageQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
   const sortedPages = [...pages].sort((a, b) => `${a.business} ${a.title}`.localeCompare(`${b.business} ${b.title}`));
-  const matches = queryTokens.length ? sortedPages.filter((page) => {
-    const haystack = `${page.business} ${page.title} ${page.url}`.toLowerCase();
-    return queryTokens.every((token) => haystack.includes(token));
-  }) : sortedPages;
-  const optionLimit = 75;
-  const visiblePages = matches.slice(0, optionLimit);
-  const selectedPage = matches.find((page) => page.page_id === state.googlePage);
-  select.innerHTML = `<option value="all">All ${state.googleCompany === "all" ? "" : `${escapeHtml(state.googleCompany)} `}landing pages (${pages.length})</option>${visiblePages.map((page) => (
+  const selectedPage = sortedPages.find((page) => page.page_id === state.googlePage);
+  select.innerHTML = `<option value="all">All ${state.googleCompany === "all" ? "" : `${escapeHtml(state.googleCompany)} `}landing pages (${pages.length})</option>${sortedPages.map((page) => (
     `<option value="${escapeHtml(page.page_id)}">${escapeHtml(page.business)} · ${escapeHtml(formatPath(page.url))}</option>`
-  )).join("")}${matches.length > optionLimit ? `<option value="" disabled>Type more to narrow ${matches.length - optionLimit} additional matches</option>` : ""}`;
+  )).join("")}`;
   if (selectedPage) select.value = state.googlePage;
   else {
     state.googlePage = "all";
     select.value = "all";
   }
-  const displayedMatches = Math.min(matches.length, optionLimit);
-  $("#google-page-search-status").textContent = queryTokens.length
-    ? `${matches.length.toLocaleString()} matching pages · showing ${displayedMatches.toLocaleString()}`
-    : pages.length > optionLimit
-      ? `Showing ${optionLimit} of ${pages.length.toLocaleString()} pages · type above to filter all pages`
-      : `${pages.length.toLocaleString()} ${state.googleCompany === "all" ? "" : `${state.googleCompany} `}landing pages available`;
+  $("#google-page-search-status").textContent = `${pages.length.toLocaleString()} ${state.googleCompany === "all" ? "" : `${state.googleCompany} `}landing pages available`;
 }
 
 function selectedGooglePage() {
@@ -1217,12 +1204,6 @@ $("#google-page-filter").addEventListener("change", (event) => {
   state.googlePage = event.target.value;
   renderGoogleReports();
 });
-$("#google-page-search").addEventListener("input", (event) => {
-  state.googlePageQuery = event.target.value;
-  state.googlePage = "all";
-  renderGooglePageFilter();
-  renderGoogleReports();
-});
 $("#google-company-search").addEventListener("input", (event) => {
   const resolved = resolveGoogleCompanyInput(event.target.value);
   if (resolved) {
@@ -1274,4 +1255,7 @@ document.querySelectorAll(".google-report-tab").forEach((button) => {
 loadHealth().catch((error) => toast(error.message));
 refreshAll().catch((error) => toast(error.message));
 window.addEventListener("hashchange", setRoute);
+window.addEventListener("focus", () => {
+  if (location.hash === "#google") loadGoogleReports().catch((error) => toast(error.message));
+});
 setRoute();
