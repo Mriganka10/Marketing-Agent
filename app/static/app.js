@@ -153,8 +153,8 @@ function renderOverviewCharts(data) {
     ["Businesses", data.businesses],
     ["Campaigns", data.campaigns],
     ["Pages", data.pages],
-    ["Leads", data.leads],
-    ["Visits", data.visits],
+    ["App DB leads", data.leads],
+    ["App page views", data.visits],
   ];
   const maxValue = Math.max(...metrics.map(([, value]) => Number(value) || 0), 1);
   $("#overview-volume-chart").innerHTML = metrics.map(([label, value]) => `
@@ -167,10 +167,10 @@ function renderOverviewCharts(data) {
   const visits = Number(data.visits) || 0;
   const leads = Number(data.leads) || 0;
   const leadWidth = visits ? Math.max(8, Math.min(100, (leads / visits) * 100)) : 8;
-  $("#overview-funnel-rate").textContent = `${Number(data.conversion_rate || 0)}% conversion`;
+  $("#overview-funnel-rate").textContent = `${Number(data.conversion_rate || 0)}% App DB conversion`;
   $("#overview-funnel").innerHTML = `
-    <div><span>Visits</span><strong>${visits.toLocaleString()}</strong><i style="--funnel-size: 100%"></i></div>
-    <div><span>Leads</span><strong>${leads.toLocaleString()}</strong><i style="--funnel-size: ${leadWidth}%"></i></div>
+    <div><span>App page views</span><strong>${visits.toLocaleString()}</strong><i style="--funnel-size: 100%"></i></div>
+    <div><span>App DB leads</span><strong>${leads.toLocaleString()}</strong><i style="--funnel-size: ${leadWidth}%"></i></div>
   `;
 }
 

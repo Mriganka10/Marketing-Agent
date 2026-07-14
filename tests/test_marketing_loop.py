@@ -63,6 +63,22 @@ def test_end_to_end_agent_loop_and_lead_capture(client):
     assert dashboard["leads"] == 1
     assert dashboard["visits"] == 1
     assert dashboard["conversions"] == 1
+    assert dashboard["conversion_rate"] == 100
+
+    # A stale historical page counter must not make the workspace conversion total
+    # disagree with its authoritative App DB lead count.
+    from app.core.database import SessionLocal
+    from app.models.entities import LandingPage
+
+    with SessionLocal() as db:
+        stored_page = db.get(LandingPage, page["id"])
+        stored_page.conversions = 11
+        db.commit()
+
+    dashboard = client.get("/api/dashboard").json()
+    assert dashboard["leads"] == 1
+    assert dashboard["conversions"] == 1
+    assert dashboard["conversion_rate"] == 100
 
 
 def test_health_and_root(client):
@@ -78,6 +94,9 @@ def test_health_and_root(client):
     assert 'id="google-page-search"' not in root.text
     assert 'id="google-page-filter"' in root.text
     assert 'id="google-date-through"' in root.text
+    assert "App DB leads" in root.text
+    assert "App page views" in root.text
+    assert "App lead conversion" in root.text
 
 
 def test_page_listing_repairs_structured_content(client):

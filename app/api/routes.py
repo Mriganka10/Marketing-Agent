@@ -510,7 +510,11 @@ def list_audit(db: Session = Depends(get_db)) -> list[dict[str, object]]:
 def dashboard(db: Session = Depends(get_db)) -> DashboardSummary:
     pages = db.query(LandingPage).all()
     visits = sum(page.visits for page in pages)
-    conversions = sum(page.conversions for page in pages)
+    leads = db.query(func.count(Lead.id)).scalar() or 0
+    # Leads are the authoritative App DB conversion record. LandingPage.conversions is
+    # retained as a historical per-page counter, but can drift when lead records are
+    # deleted or repaired and must not drive the workspace-wide conversion rate.
+    conversions = leads
     recent_leads = db.query(Lead).order_by(Lead.created_at.desc()).limit(5).all()
     recommendations = (
         db.query(RefreshRecommendation).order_by(RefreshRecommendation.created_at.desc()).limit(5).all()
@@ -519,7 +523,7 @@ def dashboard(db: Session = Depends(get_db)) -> DashboardSummary:
         businesses=db.query(func.count(BusinessProfile.id)).scalar() or 0,
         campaigns=db.query(func.count(Campaign.id)).scalar() or 0,
         pages=len(pages),
-        leads=db.query(func.count(Lead.id)).scalar() or 0,
+        leads=leads,
         visits=visits,
         conversions=conversions,
         conversion_rate=round((conversions / visits) * 100, 2) if visits else 0,
