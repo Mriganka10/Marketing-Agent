@@ -73,6 +73,8 @@ def test_health_and_root(client):
     assert "/static/redesign.css" in root.text
     assert 'id="mobile-nav-toggle"' in root.text
     assert 'id="overview-volume-chart"' in root.text
+    assert 'id="google-page-search"' in root.text
+    assert 'id="google-date-through"' in root.text
 
 
 def test_page_listing_repairs_structured_content(client):
@@ -377,6 +379,14 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     assert reports["search_console"]["totals"]["impressions"] == 240
     assert reports["search_console"]["totals"]["clicks"] == 12
     assert reports["schedule"]["label"] == "Daily at 8:30 AM IST"
+    assert reports["last_synced_at"].endswith(("Z", "+00:00"))
+    assert reports["date_range"] == {
+        "start": "2026-07-01",
+        "end": "2026-07-05",
+        "days": 5,
+        "reporting_lag_days": 2,
+        "label": "Last 5 reporting days",
+    }
     assert len(reports["search_console"]["daily"]) == 5
     assert reports["search_console"]["daily"][0] == {
         "date": "2026-07-01",

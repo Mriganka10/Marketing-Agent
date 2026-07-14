@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from statistics import mean
 from urllib.parse import quote, urljoin, urlparse
 
@@ -706,13 +706,23 @@ class SeoAnalyticsAgent:
         weighted_position = sum(
             row.average_position * max(row.impressions, 1) for row in search_rows
         )
+        last_synced_at = max(
+            (item.last_sync_at for item in (gsc_connection, ga4_connection) if item and item.last_sync_at),
+            default=None,
+        )
+        if last_synced_at and last_synced_at.tzinfo is None:
+            last_synced_at = last_synced_at.replace(tzinfo=timezone.utc)
+        reporting_days = (end_date - start_date).days + 1
         return {
             "mode": self.integration_status(db, settings)["mode"],
-            "date_range": {"start": start_date.isoformat(), "end": end_date.isoformat()},
-            "last_synced_at": max(
-                (item.last_sync_at for item in (gsc_connection, ga4_connection) if item and item.last_sync_at),
-                default=None,
-            ),
+            "date_range": {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+                "days": reporting_days,
+                "reporting_lag_days": 2,
+                "label": f"Last {reporting_days} reporting days",
+            },
+            "last_synced_at": last_synced_at,
             "schedule": {
                 "enabled": settings.google_sync_schedule_enabled,
                 "time": settings.google_sync_schedule_time,

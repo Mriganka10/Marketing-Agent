@@ -447,11 +447,18 @@ tbody tr:hover { background: #faf9ff; }
 
 .google-report-header h1 { margin-bottom: 8px; }
 .google-report-controls { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-.google-report-controls label { min-width: 300px; }
-.google-report-controls select { min-width: 300px; background: #fff; }
+.google-page-picker { display: grid; min-width: min(430px, 100%); gap: 6px; }
+.google-page-picker > label { color: var(--ink); font-size: .72rem; font-weight: 800; }
+.google-page-picker select { width: 100%; min-width: 350px; background: #fff; }
+.google-page-picker > small { color: var(--muted); font-size: .58rem; font-weight: 700; }
+.google-page-search { position: relative; }
+.google-page-search span { position: absolute; left: 12px; top: 50%; z-index: 1; color: #7e8496; font-size: 1rem; transform: translateY(-50%); pointer-events: none; }
+.google-page-search input { width: 100%; min-height: 40px; padding-left: 36px; border-color: #dfe2ed; background: #f8f9fc; }
+.google-page-search input:focus { border-color: #9589eb; background: #fff; box-shadow: 0 0 0 3px rgba(92,74,219,.09); }
 .google-date-control { display: grid; gap: 5px; min-height: 62px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .google-date-control small { color: var(--muted); font-size: .63rem; font-weight: 800; }
 .google-date-control strong { font-size: .77rem; white-space: nowrap; }
+.google-date-control span { max-width: 210px; color: #737b8e; font-size: .56rem; font-weight: 650; line-height: 1.35; }
 .google-report-controls button { min-height: 44px; }
 
 .google-report-statusbar {
@@ -581,7 +588,8 @@ tbody tr:hover { background: #faf9ff; }
   main { padding: 16px 22px 38px; }
   .overview-insights { grid-template-columns: 1fr; }
   .focus-card { grid-column: auto; }
-  .google-report-controls label, .google-report-controls select { min-width: 230px; }
+  .google-page-picker { min-width: 330px; }
+  .google-page-picker select { min-width: 0; }
 }
 
 @media (max-width: 640px) {
@@ -603,7 +611,7 @@ tbody tr:hover { background: #faf9ff; }
   .refresh-plan-actions { min-width: 0; }
   .google-report-header, .google-report-panel { padding: 18px; border-radius: 17px; }
   .google-report-controls { display: grid; grid-template-columns: 1fr; }
-  .google-report-controls label, .google-report-controls select { min-width: 0; width: 100%; }
+  .google-page-picker, .google-page-picker select { min-width: 0; width: 100%; }
   .google-report-statusbar { align-items: flex-start; flex-direction: column; }
   .google-report-statusbar span + span { padding: 0; border-left: 0; }
   .google-report-tabs { width: 100%; }

@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=google-chart-points-20260713-2" />
-  <link rel="stylesheet" href="/static/redesign.css?v=google-chart-points-20260713-2" />
+  <link rel="stylesheet" href="/static/styles.css?v=google-picker-timezone-20260714-1" />
+  <link rel="stylesheet" href="/static/redesign.css?v=google-picker-timezone-20260714-1" />
 </head>
 <body>
   <div class="app-shell">
@@ -291,8 +291,13 @@
             <p class="header-copy">Authoritative Search Console performance and GA4 behavior, kept separate from verified application leads.</p>
           </div>
           <div class="google-report-controls">
-            <label>Landing page<select id="google-page-filter"><option value="all">All landing pages</option></select></label>
-            <div class="google-date-control"><small>Date range</small><strong id="google-date-range">Loading</strong></div>
+            <div class="google-page-picker">
+              <label for="google-page-search">Landing page</label>
+              <div class="google-page-search"><span aria-hidden="true">⌕</span><input id="google-page-search" type="search" placeholder="Filter by company, title, or URL" autocomplete="off" /></div>
+              <select id="google-page-filter" aria-label="Select landing page"><option value="all">All landing pages</option></select>
+              <small id="google-page-search-status" aria-live="polite">Loading landing pages</small>
+            </div>
+            <div class="google-date-control"><small id="google-date-label">Reporting period</small><strong id="google-date-range">Loading</strong><span id="google-date-through">Checking Google data freshness</span></div>
             <button id="sync-google-reports" type="button"><span aria-hidden="true">↻</span> Sync Google now</button>
           </div>
         </div>
@@ -513,6 +518,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=google-chart-points-20260713-2"></script>
+  <script src="/static/app.js?v=google-picker-timezone-20260714-1"></script>
 </body>
 </html>

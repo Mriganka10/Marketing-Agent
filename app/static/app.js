@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googlePage: "all", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googlePage: "all", googlePageQuery: "", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "google", "pages", "activity"]);
 const routeTitles = {
@@ -60,13 +60,35 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function parseApiDate(value) {
+  if (!value) return null;
+  const text = String(value);
+  const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(text);
+  return new Date(hasTimezone || !text.includes("T") ? text : `${text}Z`);
+}
+
 function formatDate(value) {
-  return value ? new Date(value).toLocaleString([], {
+  const parsed = parseApiDate(value);
+  return parsed ? parsed.toLocaleString([], {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
   }) : "-";
+}
+
+function formatIstDate(value) {
+  const parsed = parseApiDate(value);
+  if (!parsed) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZoneName: "short",
+  }).format(parsed).replace(/\b(am|pm)\b/gi, (match) => match.toUpperCase());
 }
 
 function formatPath(url) {
@@ -342,11 +364,32 @@ function renderSeoPages(items) {
 function renderGooglePageFilter() {
   const select = $("#google-page-filter");
   const pages = state.googleReports?.search_console?.pages || [];
-  select.innerHTML = `<option value="all">All landing pages</option>${pages.map((page) => (
+  const queryTokens = state.googlePageQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const sortedPages = [...pages].sort((a, b) => `${a.business} ${a.title}`.localeCompare(`${b.business} ${b.title}`));
+  const matches = queryTokens.length ? sortedPages.filter((page) => {
+    const haystack = `${page.business} ${page.title} ${page.url}`.toLowerCase();
+    return queryTokens.every((token) => haystack.includes(token));
+  }) : sortedPages;
+  const optionLimit = 75;
+  const visiblePages = matches.slice(0, optionLimit);
+  const selectedPage = pages.find((page) => page.page_id === state.googlePage);
+  if (selectedPage && !visiblePages.some((page) => page.page_id === selectedPage.page_id)) {
+    visiblePages.unshift(selectedPage);
+  }
+  select.innerHTML = `<option value="all">All landing pages (${pages.length})</option>${visiblePages.map((page) => (
     `<option value="${escapeHtml(page.page_id)}">${escapeHtml(page.business)} · ${escapeHtml(formatPath(page.url))}</option>`
-  )).join("")}`;
-  if (pages.some((page) => page.page_id === state.googlePage)) select.value = state.googlePage;
-  else state.googlePage = "all";
+  )).join("")}${matches.length > optionLimit ? `<option value="" disabled>Type more to narrow ${matches.length - optionLimit} additional matches</option>` : ""}`;
+  if (selectedPage) select.value = state.googlePage;
+  else {
+    state.googlePage = "all";
+    select.value = "all";
+  }
+  const displayedMatches = Math.min(matches.length, optionLimit);
+  $("#google-page-search-status").textContent = queryTokens.length
+    ? `${matches.length.toLocaleString()} matching pages · showing ${displayedMatches.toLocaleString()}`
+    : pages.length > optionLimit
+      ? `Showing ${optionLimit} of ${pages.length.toLocaleString()} pages · type above to filter all pages`
+      : `${pages.length.toLocaleString()} landing pages available`;
 }
 
 function selectedGooglePage() {
@@ -380,8 +423,10 @@ function renderGoogleReports() {
   const acceptedLeads = selected ? selected.accepted_leads : report.ga4.pages.reduce((sum, page) => sum + page.accepted_leads, 0);
   const qualifiedLeads = selected ? selected.qualified_leads : report.ga4.pages.reduce((sum, page) => sum + page.qualified_leads, 0);
 
+  $("#google-date-label").textContent = report.date_range.label || "Reporting period";
   $("#google-date-range").textContent = `${shortDate(report.date_range.start)} – ${shortDate(report.date_range.end)}`;
-  $("#google-last-sync").textContent = `Last synced ${formatDate(report.last_synced_at)}`;
+  $("#google-date-through").textContent = `Google data through ${shortDate(report.date_range.end)} · ${Number(report.date_range.reporting_lag_days || 2)}-day reporting lag`;
+  $("#google-last-sync").textContent = `Last synced ${formatIstDate(report.last_synced_at)}`;
   $("#google-schedule").textContent = report.schedule.enabled ? report.schedule.label : "Automatic sync disabled";
   $("#gsc-impressions").textContent = Number(searchTotals.impressions).toLocaleString();
   $("#gsc-clicks").textContent = Number(searchTotals.clicks).toLocaleString();
@@ -1083,6 +1128,10 @@ $("#seo-business-filter").addEventListener("change", (event) => {
 $("#google-page-filter").addEventListener("change", (event) => {
   state.googlePage = event.target.value;
   renderGoogleReports();
+});
+$("#google-page-search").addEventListener("input", (event) => {
+  state.googlePageQuery = event.target.value;
+  renderGooglePageFilter();
 });
 $("#growth-business-filter").addEventListener("change", async (event) => {
   state.growthBusiness = event.target.value;
