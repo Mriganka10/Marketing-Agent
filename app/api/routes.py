@@ -72,6 +72,28 @@ def index() -> FileResponse:
     )
 
 
+def _public_file(path: str) -> FileResponse:
+    return FileResponse(
+        path,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/about", include_in_schema=False)
+def about() -> FileResponse:
+    return _public_file("app/static/about.html")
+
+
+@router.get("/privacy", include_in_schema=False)
+def privacy() -> FileResponse:
+    return _public_file("app/static/privacy.html")
+
+
+@router.get("/terms", include_in_schema=False)
+def terms() -> FileResponse:
+    return _public_file("app/static/terms.html")
+
+
 def get_llm(settings: Settings = Depends(get_settings)) -> LLMService:
     return LLMService(settings)
 
@@ -122,7 +144,10 @@ def sitemap(db: Session = Depends(get_db), settings: Settings = Depends(get_sett
             settings.public_base_url.rstrip("/"),
             "daily",
             "0.9",
-        )
+        ),
+        (urljoin(base, "about"), "monthly", "0.9"),
+        (urljoin(base, "privacy"), "monthly", "0.5"),
+        (urljoin(base, "terms"), "monthly", "0.5"),
     ] + [
         (
             urljoin(base, f"p/{page.slug}"),

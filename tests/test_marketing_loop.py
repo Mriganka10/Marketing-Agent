@@ -98,6 +98,27 @@ def test_health_and_root(client):
     assert "App page views" in root.text
     assert "App lead conversion" in root.text
 
+    about = client.get("/about")
+    assert about.status_code == 200
+    assert "Marketing Agent is developed and operated by" in about.text
+    assert "Kairoz Corporation" in about.text
+    assert "Google Ads data is accessed only for client accounts" in about.text
+    assert "/static/about-paid-campaign.jpg" in about.text
+    assert "/static/about-approval-workflow.jpg" in about.text
+
+    privacy = client.get("/privacy")
+    assert privacy.status_code == 200
+    assert "Google Ads and Google account data" in privacy.text
+
+    terms = client.get("/terms")
+    assert terms.status_code == 200
+    assert "Human approvals and advertising spend" in terms.text
+
+    sitemap = client.get("/sitemap.xml")
+    assert "/about</loc>" in sitemap.text
+    assert "/privacy</loc>" in sitemap.text
+    assert "/terms</loc>" in sitemap.text
+
 
 def test_page_listing_repairs_structured_content(client):
     business_id = client.post(
