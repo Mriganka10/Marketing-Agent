@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Marketing Agent</title>
-  <link rel="stylesheet" href="/static/styles.css?v=google-picker-timezone-20260714-1" />
-  <link rel="stylesheet" href="/static/redesign.css?v=google-picker-timezone-20260714-1" />
+  <link rel="stylesheet" href="/static/styles.css?v=dependent-company-picker-20260714-2" />
+  <link rel="stylesheet" href="/static/redesign.css?v=dependent-company-picker-20260714-2" />
 </head>
 <body>
   <div class="app-shell">
@@ -291,9 +291,15 @@
             <p class="header-copy">Authoritative Search Console performance and GA4 behavior, kept separate from verified application leads.</p>
           </div>
           <div class="google-report-controls">
+            <div class="google-company-picker">
+              <label for="google-company-search">Company</label>
+              <div class="google-page-search"><span aria-hidden="true">⌕</span><input id="google-company-search" type="search" list="google-company-options" placeholder="Type or select a company" autocomplete="off" /></div>
+              <datalist id="google-company-options"></datalist>
+              <small id="google-company-search-status" aria-live="polite">Loading companies</small>
+            </div>
             <div class="google-page-picker">
               <label for="google-page-search">Landing page</label>
-              <div class="google-page-search"><span aria-hidden="true">⌕</span><input id="google-page-search" type="search" placeholder="Filter by company, title, or URL" autocomplete="off" /></div>
+              <div class="google-page-search"><span aria-hidden="true">⌕</span><input id="google-page-search" type="search" placeholder="Filter landing pages by title or URL" autocomplete="off" /></div>
               <select id="google-page-filter" aria-label="Select landing page"><option value="all">All landing pages</option></select>
               <small id="google-page-search-status" aria-live="polite">Loading landing pages</small>
             </div>
@@ -518,6 +524,6 @@
       </div>
     </div>
   </div>
-  <script src="/static/app.js?v=google-picker-timezone-20260714-1"></script>
+  <script src="/static/app.js?v=dependent-company-picker-20260714-2"></script>
 </body>
 </html>

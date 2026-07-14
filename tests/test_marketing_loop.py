@@ -73,6 +73,8 @@ def test_health_and_root(client):
     assert "/static/redesign.css" in root.text
     assert 'id="mobile-nav-toggle"' in root.text
     assert 'id="overview-volume-chart"' in root.text
+    assert 'id="google-company-search"' in root.text
+    assert 'id="google-company-options"' in root.text
     assert 'id="google-page-search"' in root.text
     assert 'id="google-date-through"' in root.text
 

@@ -1,4 +1,4 @@
-const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googlePage: "all", googlePageQuery: "", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
+const state = { businesses: [], campaigns: [], pages: [], leads: [], audit: [], seo: null, growth: null, googleReports: null, googleCompany: "all", googlePage: "all", googlePageQuery: "", adPlans: [], seoBusiness: "all", growthBusiness: localStorage.getItem("growthBusiness") || "" };
 const $ = (selector) => document.querySelector(selector);
 const routes = new Set(["overview", "growth", "launch", "seo", "google", "pages", "activity"]);
 const routeTitles = {
@@ -199,6 +199,7 @@ async function loadSeoOverview() {
 
 async function loadGoogleReports() {
   state.googleReports = await api("/api/google-reports");
+  renderGoogleCompanyFilter();
   renderGooglePageFilter();
   renderGoogleReports();
 }
@@ -361,9 +362,55 @@ function renderSeoPages(items) {
   `).join("") : `<p class="empty">Run a campaign and sync SEO metrics to populate page scores.</p>`;
 }
 
+function googleCompanies() {
+  const pages = state.googleReports?.search_console?.pages || [];
+  return [...new Set(pages.map((page) => page.business).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+function renderGoogleCompanyFilter() {
+  const companies = googleCompanies();
+  if (state.googleCompany !== "all" && !companies.includes(state.googleCompany)) state.googleCompany = "all";
+  $("#google-company-options").innerHTML = companies.map((company) => `<option value="${escapeHtml(company)}"></option>`).join("");
+  const input = $("#google-company-search");
+  if (document.activeElement !== input) input.value = state.googleCompany === "all" ? "" : state.googleCompany;
+  $("#google-company-search-status").textContent = state.googleCompany === "all"
+    ? `${companies.length} companies available · start typing for suggestions`
+    : `Showing landing pages for ${state.googleCompany}`;
+}
+
+function googleCompanyPages() {
+  const pages = state.googleReports?.search_console?.pages || [];
+  return state.googleCompany === "all" ? pages : pages.filter((page) => page.business === state.googleCompany);
+}
+
+function applyGoogleCompany(company) {
+  const nextCompany = company || "all";
+  const changed = state.googleCompany !== nextCompany;
+  state.googleCompany = nextCompany;
+  if (changed) {
+    state.googlePage = "all";
+    state.googlePageQuery = "";
+    $("#google-page-search").value = "";
+  }
+  $("#google-company-search").value = nextCompany === "all" ? "" : nextCompany;
+  renderGoogleCompanyFilter();
+  renderGooglePageFilter();
+  renderGoogleReports();
+}
+
+function resolveGoogleCompanyInput(value, useSingleMatch = false) {
+  const query = value.trim().toLowerCase();
+  const companies = googleCompanies();
+  if (!query) return "all";
+  const exact = companies.find((company) => company.toLowerCase() === query);
+  if (exact) return exact;
+  const matches = companies.filter((company) => company.toLowerCase().includes(query));
+  return useSingleMatch && matches.length === 1 ? matches[0] : null;
+}
+
 function renderGooglePageFilter() {
   const select = $("#google-page-filter");
-  const pages = state.googleReports?.search_console?.pages || [];
+  const pages = googleCompanyPages();
   const queryTokens = state.googlePageQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
   const sortedPages = [...pages].sort((a, b) => `${a.business} ${a.title}`.localeCompare(`${b.business} ${b.title}`));
   const matches = queryTokens.length ? sortedPages.filter((page) => {
@@ -372,11 +419,8 @@ function renderGooglePageFilter() {
   }) : sortedPages;
   const optionLimit = 75;
   const visiblePages = matches.slice(0, optionLimit);
-  const selectedPage = pages.find((page) => page.page_id === state.googlePage);
-  if (selectedPage && !visiblePages.some((page) => page.page_id === selectedPage.page_id)) {
-    visiblePages.unshift(selectedPage);
-  }
-  select.innerHTML = `<option value="all">All landing pages (${pages.length})</option>${visiblePages.map((page) => (
+  const selectedPage = matches.find((page) => page.page_id === state.googlePage);
+  select.innerHTML = `<option value="all">All ${state.googleCompany === "all" ? "" : `${escapeHtml(state.googleCompany)} `}landing pages (${pages.length})</option>${visiblePages.map((page) => (
     `<option value="${escapeHtml(page.page_id)}">${escapeHtml(page.business)} · ${escapeHtml(formatPath(page.url))}</option>`
   )).join("")}${matches.length > optionLimit ? `<option value="" disabled>Type more to narrow ${matches.length - optionLimit} additional matches</option>` : ""}`;
   if (selectedPage) select.value = state.googlePage;
@@ -389,39 +433,83 @@ function renderGooglePageFilter() {
     ? `${matches.length.toLocaleString()} matching pages · showing ${displayedMatches.toLocaleString()}`
     : pages.length > optionLimit
       ? `Showing ${optionLimit} of ${pages.length.toLocaleString()} pages · type above to filter all pages`
-      : `${pages.length.toLocaleString()} landing pages available`;
+      : `${pages.length.toLocaleString()} ${state.googleCompany === "all" ? "" : `${state.googleCompany} `}landing pages available`;
 }
 
 function selectedGooglePage() {
   if (state.googlePage === "all") return null;
-  return state.googleReports?.search_console?.pages?.find((page) => page.page_id === state.googlePage) || null;
+  return googleCompanyPages().find((page) => page.page_id === state.googlePage) || null;
+}
+
+function aggregateGooglePages(pages) {
+  const searchDays = new Map();
+  const eventDays = new Map();
+  const events = {};
+  let impressions = 0, clicks = 0, weightedPosition = 0, positionWeight = 0;
+  let sessions = 0, acceptedLeads = 0, qualifiedLeads = 0;
+  pages.forEach((page) => {
+    impressions += Number(page.impressions) || 0;
+    clicks += Number(page.clicks) || 0;
+    const weight = Number(page.impressions) || 0;
+    if (weight > 0) {
+      weightedPosition += (Number(page.average_position) || 0) * weight;
+      positionWeight += weight;
+    }
+    sessions += Number(page.sessions) || 0;
+    acceptedLeads += Number(page.accepted_leads) || 0;
+    qualifiedLeads += Number(page.qualified_leads) || 0;
+    Object.entries(page.events || {}).forEach(([name, count]) => { events[name] = (events[name] || 0) + Number(count || 0); });
+    (page.search_daily || []).forEach((row) => {
+      const day = searchDays.get(row.date) || { date: row.date, impressions: 0, clicks: 0 };
+      day.impressions += Number(row.impressions) || 0;
+      day.clicks += Number(row.clicks) || 0;
+      searchDays.set(row.date, day);
+    });
+    (page.event_daily || []).forEach((row) => {
+      const day = eventDays.get(row.date) || { date: row.date, page_views: 0, form_submits: 0 };
+      day.page_views += Number(row.page_views) || 0;
+      day.form_submits += Number(row.form_submits) || 0;
+      eventDays.set(row.date, day);
+    });
+  });
+  return {
+    searchTotals: { impressions, clicks, ctr: impressions ? (clicks / impressions) * 100 : 0, average_position: positionWeight ? weightedPosition / positionWeight : 0 },
+    searchDaily: [...searchDays.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    gaTotals: { page_views: events.page_view || 0, sessions, cta_clicks: events.cta_click || 0, form_starts: events.form_start || 0, form_submits: events.form_submit || 0 },
+    gaDaily: [...eventDays.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    eventRows: Object.entries(events).map(([event_name, event_count]) => ({ event_name, event_count, source: "Google Analytics" })).sort((a, b) => b.event_count - a.event_count),
+    acceptedLeads,
+    qualifiedLeads,
+  };
 }
 
 function renderGoogleReports() {
   const report = state.googleReports;
   if (!report) return;
   const selected = selectedGooglePage();
+  const companyPages = googleCompanyPages();
+  const companyAggregate = state.googleCompany === "all" ? null : aggregateGooglePages(companyPages);
   const searchTotals = selected ? {
     impressions: selected.impressions,
     clicks: selected.clicks,
     ctr: selected.ctr,
     average_position: selected.average_position,
-  } : report.search_console.totals;
-  const searchDaily = selected ? selected.search_daily : report.search_console.daily;
-  const pages = selected ? [selected] : report.search_console.pages;
+  } : companyAggregate?.searchTotals || report.search_console.totals;
+  const searchDaily = selected ? selected.search_daily : companyAggregate?.searchDaily || report.search_console.daily;
+  const pages = selected ? [selected] : companyPages;
   const gaTotals = selected ? {
     page_views: selected.events.page_view || 0,
     sessions: selected.sessions || 0,
     cta_clicks: selected.events.cta_click || 0,
     form_starts: selected.events.form_start || 0,
     form_submits: selected.events.form_submit || 0,
-  } : report.ga4.totals;
-  const gaDaily = selected ? selected.event_daily : report.ga4.daily;
+  } : companyAggregate?.gaTotals || report.ga4.totals;
+  const gaDaily = selected ? selected.event_daily : companyAggregate?.gaDaily || report.ga4.daily;
   const eventRows = selected
     ? Object.entries(selected.events).map(([event_name, event_count]) => ({ event_name, event_count, source: "Google Analytics" })).sort((a, b) => b.event_count - a.event_count)
-    : report.ga4.events;
-  const acceptedLeads = selected ? selected.accepted_leads : report.ga4.pages.reduce((sum, page) => sum + page.accepted_leads, 0);
-  const qualifiedLeads = selected ? selected.qualified_leads : report.ga4.pages.reduce((sum, page) => sum + page.qualified_leads, 0);
+    : companyAggregate?.eventRows || report.ga4.events;
+  const acceptedLeads = selected ? selected.accepted_leads : (companyAggregate?.acceptedLeads ?? report.ga4.pages.reduce((sum, page) => sum + page.accepted_leads, 0));
+  const qualifiedLeads = selected ? selected.qualified_leads : (companyAggregate?.qualifiedLeads ?? report.ga4.pages.reduce((sum, page) => sum + page.qualified_leads, 0));
 
   $("#google-date-label").textContent = report.date_range.label || "Reporting period";
   $("#google-date-range").textContent = `${shortDate(report.date_range.start)} – ${shortDate(report.date_range.end)}`;
@@ -1131,7 +1219,26 @@ $("#google-page-filter").addEventListener("change", (event) => {
 });
 $("#google-page-search").addEventListener("input", (event) => {
   state.googlePageQuery = event.target.value;
+  state.googlePage = "all";
   renderGooglePageFilter();
+  renderGoogleReports();
+});
+$("#google-company-search").addEventListener("input", (event) => {
+  const resolved = resolveGoogleCompanyInput(event.target.value);
+  if (resolved) {
+    applyGoogleCompany(resolved);
+    return;
+  }
+  const query = event.target.value.trim().toLowerCase();
+  const matches = googleCompanies().filter((company) => company.toLowerCase().includes(query));
+  $("#google-company-search-status").textContent = matches.length
+    ? `${matches.length} company suggestions · select one to refresh landing pages`
+    : "No matching company";
+});
+$("#google-company-search").addEventListener("change", (event) => {
+  const resolved = resolveGoogleCompanyInput(event.target.value, true);
+  if (resolved) applyGoogleCompany(resolved);
+  else $("#google-company-search-status").textContent = "Choose a company from the autocomplete suggestions";
 });
 $("#growth-business-filter").addEventListener("change", async (event) => {
   state.growthBusiness = event.target.value;

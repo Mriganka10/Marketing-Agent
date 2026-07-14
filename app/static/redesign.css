@@ -435,7 +435,8 @@ tbody tr:hover { background: #faf9ff; }
 
 .google-report-header {
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
+  flex-direction: column;
   justify-content: space-between;
   gap: 28px;
   padding: 31px 34px;
@@ -446,10 +447,14 @@ tbody tr:hover { background: #faf9ff; }
 }
 
 .google-report-header h1 { margin-bottom: 8px; }
-.google-report-controls { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.google-report-controls { display: grid; grid-template-columns: minmax(210px,.75fr) minmax(320px,1.25fr) auto auto; align-items: end; gap: 10px; width: 100%; }
+.google-company-picker,
 .google-page-picker { display: grid; min-width: min(430px, 100%); gap: 6px; }
+.google-company-picker { min-width: 210px; }
+.google-company-picker > label,
 .google-page-picker > label { color: var(--ink); font-size: .72rem; font-weight: 800; }
 .google-page-picker select { width: 100%; min-width: 350px; background: #fff; }
+.google-company-picker > small,
 .google-page-picker > small { color: var(--muted); font-size: .58rem; font-weight: 700; }
 .google-page-search { position: relative; }
 .google-page-search span { position: absolute; left: 12px; top: 50%; z-index: 1; color: #7e8496; font-size: 1rem; transform: translateY(-50%); pointer-events: none; }
@@ -565,8 +570,8 @@ tbody tr:hover { background: #faf9ff; }
   .command-center { grid-template-columns: 1fr; }
   .overview-insights { grid-template-columns: 1fr 1fr; }
   .focus-card { grid-column: 1 / -1; }
-  .google-report-header { align-items: stretch; flex-direction: column; }
-  .google-report-controls { justify-content: flex-start; }
+  .google-report-controls { grid-template-columns: minmax(190px,.75fr) minmax(280px,1.25fr) auto; }
+  .google-report-controls button { grid-column: 3; }
   .google-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .ga4-primary-grid, .ga4-secondary-grid { grid-template-columns: 1fr; }
 }
@@ -588,7 +593,10 @@ tbody tr:hover { background: #faf9ff; }
   main { padding: 16px 22px 38px; }
   .overview-insights { grid-template-columns: 1fr; }
   .focus-card { grid-column: auto; }
-  .google-page-picker { min-width: 330px; }
+  .google-report-controls { grid-template-columns: minmax(210px,.8fr) minmax(300px,1.2fr); }
+  .google-report-controls button { grid-column: auto; }
+  .google-company-picker { min-width: 210px; }
+  .google-page-picker { min-width: 300px; }
   .google-page-picker select { min-width: 0; }
 }
 
@@ -611,7 +619,7 @@ tbody tr:hover { background: #faf9ff; }
   .refresh-plan-actions { min-width: 0; }
   .google-report-header, .google-report-panel { padding: 18px; border-radius: 17px; }
   .google-report-controls { display: grid; grid-template-columns: 1fr; }
-  .google-page-picker, .google-page-picker select { min-width: 0; width: 100%; }
+  .google-company-picker, .google-page-picker, .google-page-picker select { min-width: 0; width: 100%; }
   .google-report-statusbar { align-items: flex-start; flex-direction: column; }
   .google-report-statusbar span + span { padding: 0; border-left: 0; }
   .google-report-tabs { width: 100%; }
