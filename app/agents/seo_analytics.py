@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-from statistics import mean
 from urllib.parse import quote, urljoin, urlparse
 
 from sqlalchemy import func
@@ -367,8 +366,15 @@ class SeoAnalyticsAgent:
             organic_impressions=impressions,
             organic_clicks=clicks,
             ctr=round((clicks / impressions) * 100, 2) if impressions else 0,
-            average_position=round(mean([score.average_position for score in scores]), 2)
-            if scores
+            # Search Console position is averaged per impression. Pages without any
+            # impressions must not be treated as position zero because that makes a
+            # small amount of real Google data look artificially close to position 0.
+            average_position=round(
+                sum(score.average_position * score.impressions for score in scores)
+                / impressions,
+                2,
+            )
+            if impressions
             else 0,
             sessions=sessions,
             engaged_sessions=engaged_sessions,
@@ -408,7 +414,11 @@ class SeoAnalyticsAgent:
             sessions = page.visits
         engaged_sessions = sum(item.engaged_sessions for item in analytics)
         ctr = (clicks / impressions) * 100 if impressions else 0
-        average_position = mean([item.average_position for item in search]) if search else 0
+        average_position = (
+            sum(item.average_position * item.impressions for item in search) / impressions
+            if impressions
+            else 0
+        )
         conversion_rate = (leads / sessions) * 100 if sessions else 0
         technical_score = self._technical_score(page, settings)
         content_score = self._content_score(page)
@@ -436,7 +446,11 @@ class SeoAnalyticsAgent:
         )
         analytics_source = self._metric_source(
             {item.source for item in analytics},
-            fallback="App DB" if page.visits else "Waiting for analytics events",
+            fallback=(
+                "Waiting for GA4"
+                if live_google
+                else ("App DB" if page.visits else "Waiting for analytics events")
+            ),
         )
         first_party_events = self._first_party_event_summary(db, page)
         google_index_status = self._google_index_status(
@@ -586,10 +600,19 @@ class SeoAnalyticsAgent:
 
     @staticmethod
     def _overview_source(scores: list[SeoPageScore], key: str) -> str:
-        sources = sorted({score.metric_sources[key] for score in scores})
+        page_sources = [score.metric_sources[key] for score in scores]
+        sources = sorted(set(page_sources))
         if not sources:
             return "Waiting for data"
-        return sources[0] if len(sources) == 1 else "Mixed page sources"
+        if len(sources) == 1:
+            return sources[0]
+
+        reporting_sources = [source for source in page_sources if not source.startswith("Waiting")]
+        if not reporting_sources:
+            return "Waiting for data"
+        source_names = sorted(set(reporting_sources))
+        source_label = " + ".join(source_names).replace("Live Google Search Console", "Live GSC")
+        return f"{source_label} · {len(reporting_sources)}/{len(scores)} pages reporting"
 
     def google_reports(self, db: Session, settings: Settings) -> dict[str, object]:
         pages = db.query(LandingPage).filter(LandingPage.status == "published").all()

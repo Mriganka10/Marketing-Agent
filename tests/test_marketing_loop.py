@@ -391,6 +391,21 @@ def test_seo_sync_uses_live_google_rows_when_configured(client, monkeypatch):
     assert any(item["query"] == "automated seo agents" for item in overview["top_queries"])
     assert overview["organic_impressions"] == 240
     assert overview["sessions"] == 33
+    assert overview["average_position"] == 4.2
+    reporting_pages = overview["pages_published"]
+    assert overview["metric_sources"]["organic_impressions"] == (
+        f"Live GSC · 1/{reporting_pages} pages reporting"
+    )
+    assert overview["metric_sources"]["organic_clicks"] == (
+        f"Live GSC · 1/{reporting_pages} pages reporting"
+    )
+    assert overview["metric_sources"]["average_position"] == (
+        f"Live GSC · 1/{reporting_pages} pages reporting"
+    )
+    assert overview["metric_sources"]["sessions"] == (
+        f"Live GA4 · 1/{reporting_pages} pages reporting"
+    )
+    assert all("Mixed page sources" not in source for source in overview["metric_sources"].values())
     live_page = next(item for item in overview["page_scores"] if item["page_id"] == page["id"])
     assert live_page["metric_sources"]["impressions"] == "Live Google Search Console"
     assert live_page["metric_sources"]["sessions"] == "Live GA4"
