@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     google_search_console_site_url: str | None = None
     google_service_account_json: str | None = None
     google_sync_schedule_enabled: bool = True
+    google_sync_scheduler_backend: Literal["process", "eventbridge"] = "process"
     google_sync_schedule_time: str = "08:30"
     google_sync_schedule_timezone: str = "Asia/Kolkata"
+    worker_queue_url: str | None = None
     dataforseo_enabled: bool = False
     dataforseo_login: str | None = None
     dataforseo_password: str | None = None
@@ -58,6 +60,10 @@ class Settings(BaseSettings):
     def default_blank_database_url(cls, value: str | None) -> str:
         if not value:
             return "sqlite:///./data/marketing_agent.db"
+        if value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgres://")
+        if value.startswith("postgresql://") and "+psycopg" not in value:
+            return "postgresql+psycopg://" + value.removeprefix("postgresql://")
         return value
 
     @field_validator("openai_model", mode="before")

@@ -23,3 +23,8 @@ def test_google_sync_schedule_uses_configured_ist_time():
 
     assert same_day == datetime(2026, 7, 13, 8, 30, tzinfo=timezone)
     assert next_day == datetime(2026, 7, 14, 8, 30, tzinfo=timezone)
+
+
+def test_database_url_uses_installed_psycopg_driver():
+    settings = Settings(database_url="postgresql://user:pass@db.example/marketing")
+    assert settings.database_url == "postgresql+psycopg://user:pass@db.example/marketing"

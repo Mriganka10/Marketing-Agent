@@ -24,17 +24,24 @@ def next_google_sync_at(settings: Settings, *, now: datetime | None = None) -> d
 
 
 async def run_google_sync_schedule(settings: Settings) -> None:
-    if not settings.google_sync_schedule_enabled or settings.environment != "production":
+    if (
+        not settings.google_sync_schedule_enabled
+        or settings.environment != "production"
+        or settings.google_sync_scheduler_backend == "eventbridge"
+    ):
         return
     while True:
         target = next_google_sync_at(settings)
         delay = max(1, (target - datetime.now(target.tzinfo)).total_seconds())
         logger.info("Next automatic Google metrics sync scheduled for %s", target.isoformat())
         await asyncio.sleep(delay)
-        await asyncio.to_thread(_run_sync, settings)
+        try:
+            await asyncio.to_thread(run_google_sync_once, settings)
+        except Exception:  # pragma: no cover - keeps the production schedule alive
+            logger.exception("Scheduled Google metrics sync failed")
 
 
-def _run_sync(settings: Settings) -> None:
+def run_google_sync_once(settings: Settings) -> None:
     with SessionLocal() as db:
         try:
             result = SeoAnalyticsAgent().sync_metrics(db, settings)
@@ -54,3 +61,4 @@ def _run_sync(settings: Settings) -> None:
                 entity_type="seo_metrics",
                 metadata={"error_type": type(exc).__name__},
             )
+            raise
