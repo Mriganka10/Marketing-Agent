@@ -12,7 +12,7 @@ WORKER_QUEUE_URL=<queue-url>
 SERVICE_MODE=worker                 # worker task only
 PUBLIC_BASE_URL=https://agenticgrowthlabs.com
 SSM_ENABLED=true
-SSM_PARAMETER_PATH=/marketing-agent/prod
+SSM_PARAMETER_PATH=/kairoz/production/marketing
 ```
 
 Keep database, OpenAI, API key, Google, email, and third-party credentials in SSM/Secrets Manager. The ECS task role needs least-privilege access only to this application's parameters, queue, S3 namespace, logs, and required KMS keys.
@@ -20,5 +20,8 @@ Keep database, OpenAI, API key, Google, email, and third-party credentials in SS
 Build one immutable ARM-compatible image and deploy its digest to both task definitions. Update the worker before the web service, wait for stability, then test health, protected APIs, campaign generation, public pages, lead capture, approval/publish, analytics, and one queued Google sync. Monitor ALB errors, ECS restarts, EventBridge failures, queue age/DLQ, RDS, and sync audit records.
 
 Rollback uses preceding ECS task definitions. The old Elastic Beanstalk environment is paused for a temporary 7–14 day rollback window and is not the active runtime.
+
+The legacy Marketing RDS instance still exists during that window and continues to incur charges.
+After final data/restore validation and owner approval, snapshot and retire it separately.
 
 See [deployment walkthrough](AWS_DEPLOYMENT_WALKTHROUGH.md), [environment and secrets](AWS_ENVIRONMENT_AND_SECRETS.md), [operations](OPERATIONS_RUNBOOK.md), and [code walkthrough](CODE_WALKTHROUGH.md).

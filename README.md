@@ -16,7 +16,7 @@ Understand business -> find demand -> create pages -> capture leads -> measure S
 
 OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep the app usable in local and CI environments.
 
-In AWS, set `SSM_ENABLED=true` and `SSM_PARAMETER_PATH=/marketing-agent/prod`. The ECS tasks read
+In AWS, set `SSM_ENABLED=true` and `SSM_PARAMETER_PATH=/kairoz/production/marketing`. The ECS tasks read
 and decrypt configuration from Parameter Store at startup; secrets are not copied into source or
 plain-text task settings.
 

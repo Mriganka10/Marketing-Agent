@@ -54,7 +54,7 @@ The new Growth Suite adds the client package layer around that loop:
 The deployment script reads production values from AWS Systems Manager Parameter Store under:
 
 ```text
-/marketing-agent/prod
+/kairoz/production/marketing
 ```
 
 Add these values as SecureString parameters before a deploy if you want the live production site to use them immediately. If they are not present yet, the deployed UI will still work and will show those integrations as pending.
@@ -91,9 +91,9 @@ Live DataForSEO behavior:
 SSM parameter names:
 
 ```text
-/marketing-agent/prod/dataforseo-enabled
-/marketing-agent/prod/dataforseo-login
-/marketing-agent/prod/dataforseo-password
+/kairoz/production/marketing/dataforseo-enabled
+/kairoz/production/marketing/dataforseo-login
+/kairoz/production/marketing/dataforseo-password
 ```
 
 Required for Google Ads:
@@ -110,14 +110,14 @@ Required for Google Ads:
 SSM parameter names:
 
 ```text
-/marketing-agent/prod/google-ads-enabled
-/marketing-agent/prod/google-ads-developer-token
-/marketing-agent/prod/google-ads-client-id
-/marketing-agent/prod/google-ads-client-secret
-/marketing-agent/prod/google-ads-refresh-token
-/marketing-agent/prod/google-ads-login-customer-id
-/marketing-agent/prod/google-ads-customer-id
-/marketing-agent/prod/google-ads-api-version
+/kairoz/production/marketing/google-ads-enabled
+/kairoz/production/marketing/google-ads-developer-token
+/kairoz/production/marketing/google-ads-client-id
+/kairoz/production/marketing/google-ads-client-secret
+/kairoz/production/marketing/google-ads-refresh-token
+/kairoz/production/marketing/google-ads-login-customer-id
+/kairoz/production/marketing/google-ads-customer-id
+/kairoz/production/marketing/google-ads-api-version
 ```
 
 For Google Ads, keep `GOOGLE_ADS_CUSTOMER_ID` as the manager account initially. When a real child ad account is linked, replace it with the child customer ID and keep `GOOGLE_ADS_LOGIN_CUSTOMER_ID` as the manager account ID.

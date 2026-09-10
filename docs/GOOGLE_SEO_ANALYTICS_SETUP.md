@@ -19,13 +19,13 @@ This app can run in two modes:
 
 ## AWS SSM Parameters
 
-Store these values in AWS Systems Manager Parameter Store under `/marketing-agent/prod`:
+Store these values in AWS Systems Manager Parameter Store under `/kairoz/production/marketing`:
 
 ```bash
-aws ssm put-parameter --name /marketing-agent/prod/ga4-property-id --type SecureString --value "544328945" --overwrite --region ap-south-1
-aws ssm put-parameter --name /marketing-agent/prod/ga4-measurement-id --type SecureString --value "G-KZ3N4G2S20" --overwrite --region ap-south-1
-aws ssm put-parameter --name /marketing-agent/prod/google-search-console-site-url --type SecureString --value "sc-domain:agenticgrowthlabs.com" --overwrite --region ap-south-1
-aws ssm put-parameter --name /marketing-agent/prod/google-service-account-json --type SecureString --value '<service-account-json>' --overwrite --region ap-south-1
+aws ssm put-parameter --name /kairoz/production/marketing/ga4-property-id --type SecureString --value "544328945" --overwrite --region ap-south-1
+aws ssm put-parameter --name /kairoz/production/marketing/ga4-measurement-id --type SecureString --value "G-KZ3N4G2S20" --overwrite --region ap-south-1
+aws ssm put-parameter --name /kairoz/production/marketing/google-search-console-site-url --type SecureString --value "sc-domain:agenticgrowthlabs.com" --overwrite --region ap-south-1
+aws ssm put-parameter --name /kairoz/production/marketing/google-service-account-json --type SecureString --value '<service-account-json>' --overwrite --region ap-south-1
 ```
 
 After setting parameters, force new ECS web and worker deployments so startup reloads SSM values.
@@ -52,7 +52,7 @@ marketing-agent-seo-sync@innate-beacon-433717-d2.iam.gserviceaccount.com
 7. Stored the key in AWS SSM:
 
 ```text
-/marketing-agent/prod/google-service-account-json
+/kairoz/production/marketing/google-service-account-json
 ```
 
 8. Verified the Search Console domain property using a Route 53 TXT record:

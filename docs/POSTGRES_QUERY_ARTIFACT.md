@@ -27,19 +27,19 @@ shared protected PostgreSQL instance; dedicated Marketing database and role
 RDS endpoint:
 
 ```text
-marketing-agent-prod-postgres.c7yu6kk6ytyl.ap-south-1.rds.amazonaws.com
+kairoz-production-postgres.c7yu6kk6ytyl.ap-south-1.rds.amazonaws.com
 ```
 
 SSM secure parameter path for the connection URL:
 
 ```text
-/marketing-agent/prod/database-url
+/kairoz/production/marketing/database-url
 ```
 
 Connection URL format:
 
 ```text
-postgresql+psycopg://<username>:<password>@marketing-agent-prod-postgres.c7yu6kk6ytyl.ap-south-1.rds.amazonaws.com:5432/<database>
+postgresql+psycopg://<marketing-role>:<password>@kairoz-production-postgres.c7yu6kk6ytyl.ap-south-1.rds.amazonaws.com:5432/<marketing-database>
 ```
 
 ## Get the Connection URL from AWS CLI
@@ -49,7 +49,7 @@ Run this from a machine or CloudShell session that has permission to read the se
 ```bash
 aws ssm get-parameter \
   --region ap-south-1 \
-  --name /marketing-agent/prod/database-url \
+  --name /kairoz/production/marketing/database-url \
   --with-decryption \
   --query Parameter.Value \
   --output text

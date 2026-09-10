@@ -44,4 +44,6 @@ Production uses `GOOGLE_SYNC_SCHEDULER_BACKEND=eventbridge`, `WORKER_QUEUE_URL`,
 
 ## Verification
 
-Run `ruff check .` and `pytest`. The migration release passed 29 tests, followed by production health and end-to-end smoke checks.
+Run `pytest` and `ruff check .`. On 10 September 2026, all 29 tests passed. The repository-wide
+Ruff audit still reports 86 pre-existing style and modernization findings; address them separately
+because bulk automatic fixes can alter production code.

@@ -117,7 +117,7 @@ Monitor:
 Production health check:
 
 ```bash
-curl http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com/health
+curl https://agenticgrowthlabs.com/health
 ```
 
 Production database inspection:

@@ -108,33 +108,33 @@ GOOGLE_ADS_API_VERSION=v23
 The application reads directly from this path at every process startup:
 
 ```text
-/marketing-agent/prod
+/kairoz/production/marketing
 ```
 
 Expected SSM parameters include:
 
 ```text
-/marketing-agent/prod/database-url
-/marketing-agent/prod/openai-api-key
-/marketing-agent/prod/openai-model
-/marketing-agent/prod/secret-key
-/marketing-agent/prod/api-key
-/marketing-agent/prod/s3-bucket
-/marketing-agent/prod/ga4-measurement-id
-/marketing-agent/prod/ga4-property-id
-/marketing-agent/prod/google-search-console-site-url
-/marketing-agent/prod/google-service-account-json
-/marketing-agent/prod/dataforseo-enabled
-/marketing-agent/prod/dataforseo-login
-/marketing-agent/prod/dataforseo-password
-/marketing-agent/prod/google-ads-enabled
-/marketing-agent/prod/google-ads-developer-token
-/marketing-agent/prod/google-ads-client-id
-/marketing-agent/prod/google-ads-client-secret
-/marketing-agent/prod/google-ads-refresh-token
-/marketing-agent/prod/google-ads-login-customer-id
-/marketing-agent/prod/google-ads-customer-id
-/marketing-agent/prod/google-ads-api-version
+/kairoz/production/marketing/database-url
+/kairoz/production/marketing/openai-api-key
+/kairoz/production/marketing/openai-model
+/kairoz/production/marketing/secret-key
+/kairoz/production/marketing/api-key
+/kairoz/production/marketing/s3-bucket
+/kairoz/production/marketing/ga4-measurement-id
+/kairoz/production/marketing/ga4-property-id
+/kairoz/production/marketing/google-search-console-site-url
+/kairoz/production/marketing/google-service-account-json
+/kairoz/production/marketing/dataforseo-enabled
+/kairoz/production/marketing/dataforseo-login
+/kairoz/production/marketing/dataforseo-password
+/kairoz/production/marketing/google-ads-enabled
+/kairoz/production/marketing/google-ads-developer-token
+/kairoz/production/marketing/google-ads-client-id
+/kairoz/production/marketing/google-ads-client-secret
+/kairoz/production/marketing/google-ads-refresh-token
+/kairoz/production/marketing/google-ads-login-customer-id
+/kairoz/production/marketing/google-ads-customer-id
+/kairoz/production/marketing/google-ads-api-version
 ```
 
 Recommended owner practice:
@@ -223,7 +223,7 @@ If values are changed in SSM:
 or decrypted values.
 
 The Marketing ECS task role uses a dedicated SSM read policy. Its SSM resource is restricted to
-`parameter/marketing-agent/prod/*`; it does not grant account-wide Parameter Store reads.
+`parameter/kairoz/production/marketing/*`; it does not grant account-wide Parameter Store reads.
 
 ## Google Server And Play Store Clarification
 

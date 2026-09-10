@@ -560,7 +560,7 @@ It is a self-improving SEO and lead-generation workflow.
 
 - Add Google Search Console OAuth/service-account integration.
 - Add GA4 Data API integration.
-- Add scheduled background jobs for daily metric sync.
+- Add queue-depth autoscaling and operational alarms to the implemented daily EventBridge/SQS sync.
 - Add `sitemap.xml` generation.
 - Add `robots.txt`.
 - Add canonical tags.
