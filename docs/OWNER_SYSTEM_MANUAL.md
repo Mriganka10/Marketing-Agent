@@ -22,7 +22,7 @@ Production domain:
 https://agenticgrowthlabs.com
 ```
 
-AWS Elastic Beanstalk environment:
+Current AWS runtime:
 
 ```text
 marketing-agent-eb-prod
@@ -199,7 +199,7 @@ Growth Suite metric source labels:
 AWS:
 
 - hosts the production application and database infrastructure;
-- stores environment configuration through Elastic Beanstalk environment variables and/or SSM Parameter Store.
+- loads protected environment configuration from SSM into isolated ECS task definitions.
 
 ## Owner Responsibilities
 

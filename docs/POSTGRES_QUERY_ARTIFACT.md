@@ -12,16 +12,16 @@ AWS region:
 ap-south-1
 ```
 
-Elastic Beanstalk environment:
+Active runtime:
 
 ```text
-marketing-agent-eb-prod
+isolated Marketing Agent ECS web/worker services
 ```
 
-RDS instance:
+RDS topology:
 
 ```text
-marketing-agent-prod-postgres
+shared protected PostgreSQL instance; dedicated Marketing database and role
 ```
 
 RDS endpoint:
@@ -55,43 +55,29 @@ aws ssm get-parameter \
   --output text
 ```
 
-## Get the Connection URL from EB Session Manager
+## Get the Connection URL from an ECS Task
 
-Open the Elastic Beanstalk EC2 instance in AWS Systems Manager Session Manager and run:
-
-```bash
-sudo docker exec "$(sudo docker ps --format '{{.ID}}' | head -n 1)" \
-  python -c "from app.core.config import get_settings; print(get_settings().database_url)"
-```
-
-This prints the live SQLAlchemy PostgreSQL connection URL from the running container.
-
-## Connect with psql from Session Manager
-
-If `psql` is not installed on the EB instance, install the PostgreSQL client:
+Use ECS Exec only from an authorized operator session and only when audit policy permits it:
 
 ```bash
-sudo dnf install -y postgresql15
+aws ecs execute-command --cluster <cluster> --task <task-id> --container <container> \
+  --interactive --command "/bin/sh"
 ```
 
-Then connect:
+Inside the task, use an approved database client. Avoid printing a decrypted connection URL into
+terminal history; prefer IAM-controlled secret retrieval and audit the session.
+
+## Connect with psql
+
+Use a short-lived administrative task or approved bastion in the VPC with the PostgreSQL client.
+Do not modify a running application container to install tools.
 
 ```bash
-CONTAINER_ID="$(sudo docker ps --format '{{.ID}}' | head -n 1)"
-export DATABASE_URL="$(sudo docker exec "$CONTAINER_ID" python -c "from app.core.config import get_settings; print(get_settings().database_url.replace('postgresql+psycopg://', 'postgresql://'))")"
-psql "$DATABASE_URL"
+psql "postgresql://<app-role>:<secret>@<shared-rds-endpoint>:5432/<marketing-db>"
 ```
 
-## One Paste Block for SSM Session Manager
-
-Paste this into the EB EC2 Session Manager terminal to install the client, fetch the live database URL from the running container, and open `psql`:
-
-```bash
-sudo dnf install -y postgresql15
-CONTAINER_ID="$(sudo docker ps --format '{{.ID}}' | head -n 1)"
-export DATABASE_URL="$(sudo docker exec "$CONTAINER_ID" python -c "from app.core.config import get_settings; print(get_settings().database_url.replace('postgresql+psycopg://', 'postgresql://'))")"
-psql "$DATABASE_URL"
-```
+Retrieve the password at execution time from the approved secure store. Do not export or paste it
+into shared logs, tickets, screenshots, or this repository.
 
 ## Table List
 

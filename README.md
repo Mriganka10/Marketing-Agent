@@ -16,9 +16,9 @@ Understand business -> find demand -> create pages -> capture leads -> measure S
 
 OpenAI is used when `OPENAI_API_KEY` is configured. Deterministic fallbacks keep the app usable in local and CI environments.
 
-In AWS, set `SSM_ENABLED=true` and `SSM_PARAMETER_PATH=/marketing-agent/prod`. The app reads
-and decrypts its configuration directly from Parameter Store at process startup; secrets do not
-need to be copied into Elastic Beanstalk environment values.
+In AWS, set `SSM_ENABLED=true` and `SSM_PARAMETER_PATH=/marketing-agent/prod`. The ECS tasks read
+and decrypt configuration from Parameter Store at startup; secrets are not copied into source or
+plain-text task settings.
 
 ## Run Locally
 
@@ -63,12 +63,13 @@ docker run --env-file .env -p 8000:8000 marketing-agent
 
 ## Deployment
 
-See `docs/DEPLOYMENT_AWS.md` for Elastic Beanstalk, EC2/EBS, S3, and production hardening notes.
+See `docs/DEPLOYMENT_AWS.md` for the current CloudFront, ALB, ECS, EventBridge, SQS, RDS, and S3 design.
 
 ## Documentation
 
 - `docs/OWNER_SYSTEM_MANUAL.md`
 - `docs/ARCHITECTURE_DEEP_DIVE.md`
+- `docs/CODE_WALKTHROUGH.md`
 - `docs/FUNCTIONALITY_WALKTHROUGH.md`
 - `docs/AGENT_CATALOG_DETAILED.md`
 - `docs/DATABASE_TABLES_AND_QUERIES.md`

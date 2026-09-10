@@ -93,16 +93,16 @@ python -m ruff check app tests
 
 First deployment:
 
-- Elastic Beanstalk Docker.
+- CloudFront, shared ALB, and isolated ECS web/worker services.
 - Single EC2.
 - SQLite on persistent EBS or RDS Postgres.
-- OpenAI key in EB environment variables.
+- OpenAI key in SSM/Secrets Manager.
 
 Recommended production deployment:
 
-- Elastic Beanstalk Docker.
+- EventBridge Scheduler and SQS for the durable daily sync.
 - RDS Postgres.
-- S3 for future assets.
+- Private S3 for application assets and exports.
 - CloudWatch logs.
 - HTTPS.
 - `API_KEY` for admin write routes.

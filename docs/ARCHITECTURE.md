@@ -22,7 +22,7 @@ flowchart LR
     API --> Analytics["Analytics/Refresh Agent"]
     Research --> LLM["OpenAI or deterministic fallback"]
     Content --> LLM
-    API --> DB["SQLite local / Postgres target"]
+    API --> DB["SQLite local / dedicated PostgreSQL database"]
     API --> Audit["Audit Events"]
 ```
 
@@ -35,6 +35,8 @@ flowchart LR
 - `app/core/database.py`: SQLAlchemy engine, session, and table creation.
 - `app/core/audit.py`: Audit event writer.
 - `app/core/content_formatting.py`: Normalizes LLM output into human-readable page content.
+- `app/core/google_sync_scheduler.py`: One Google metrics synchronization run and local scheduler fallback.
+- `app/worker.py`: Production SQS consumer for scheduled background actions.
 - `app/models/entities.py`: SQLAlchemy database models.
 - `app/models/schemas.py`: Pydantic request and response models.
 - `app/static/`: Dashboard and public page frontend assets.
@@ -60,7 +62,7 @@ Default local storage is SQLite:
 sqlite:///./data/marketing_agent.db
 ```
 
-For production or multi-instance deployment, use RDS Postgres and set `DATABASE_URL` in `.env` or the cloud environment.
+Production uses the application's own database and role on the shared RDS PostgreSQL instance.
 
 ## LLM Behavior
 
@@ -71,8 +73,8 @@ If OpenAI is not configured or an LLM call fails, agents use deterministic fallb
 ## Production Notes
 
 - The app creates tables automatically at startup.
-- SQLite is acceptable for local use or a single EC2 instance with persistent EBS.
-- RDS Postgres is recommended before autoscaling or multi-instance Elastic Beanstalk.
+- SQLite is acceptable only for local development.
+- Production uses RDS PostgreSQL and separate ECS web/worker services.
 - `API_KEY` protects admin write endpoints when configured.
 - `.env` is intentionally ignored by git and should contain local secrets only.
 
@@ -80,10 +82,13 @@ If OpenAI is not configured or an LLM call fails, agents use deterministic fallb
 
 ```mermaid
 flowchart LR
-    Browser["User Browser"] --> EB["Elastic Beanstalk: marketing-agent-eb-prod"]
-    EB --> EC2["Single EC2 Docker Host"]
-    EC2 --> App["FastAPI Marketing Agent Container"]
-    App --> RDS["RDS PostgreSQL: marketing-agent-prod-postgres"]
+    Browser["User Browser"] --> CF["CloudFront: agenticgrowthlabs.com"]
+    CF --> ALB["Shared ALB / private origin route"]
+    ALB --> App["Isolated ECS Web Service"]
+    Schedule["EventBridge 08:30 Asia/Kolkata"] --> Queue["SQS Queue"]
+    Queue --> Worker["Isolated ECS Worker"]
+    App --> RDS["Shared RDS / dedicated database and role"]
+    Worker --> RDS
     App --> S3["S3: marketing-agent-prod bucket"]
     App --> OpenAI["OpenAI API"]
     App --> Audit["audit_events table"]
@@ -92,7 +97,7 @@ flowchart LR
 Current public endpoint:
 
 ```text
-http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
+https://agenticgrowthlabs.com
 ```
 
 PostgreSQL operational queries are maintained in:

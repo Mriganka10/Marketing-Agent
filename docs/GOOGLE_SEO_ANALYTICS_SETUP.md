@@ -28,7 +28,7 @@ aws ssm put-parameter --name /marketing-agent/prod/google-search-console-site-ur
 aws ssm put-parameter --name /marketing-agent/prod/google-service-account-json --type SecureString --value '<service-account-json>' --overwrite --region ap-south-1
 ```
 
-After setting the parameters, redeploy Elastic Beanstalk. The deploy script maps these SSM values into the production environment.
+After setting parameters, force new ECS web and worker deployments so startup reloads SSM values.
 
 ## Exact Setup Performed For Production
 
@@ -69,7 +69,7 @@ google-site-verification=yaBLRHbyx-qoMc74G4eNj43JTtUzkObqdMfBq7WPiUE
 GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:agenticgrowthlabs.com
 ```
 
-12. Redeployed Elastic Beanstalk and confirmed:
+12. Redeployed the ECS services and confirmed:
 
 ```text
 mode=live_google_integrated

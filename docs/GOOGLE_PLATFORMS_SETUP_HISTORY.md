@@ -200,7 +200,7 @@ Production concern:
 
 ## AWS Configuration Names
 
-Google-related values are expected as environment variables or SSM-backed Elastic Beanstalk options:
+Google-related values are expected through the SSM-backed ECS task configuration:
 
 ```text
 GA4_MEASUREMENT_ID

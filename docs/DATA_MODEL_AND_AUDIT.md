@@ -158,5 +158,5 @@ For production:
 
 - Keep audit records for at least 90 days.
 - Export audit snapshots to S3 if compliance or owner reporting is needed.
-- Back up SQLite if used on single EC2.
+- Back up SQLite for local development; production relies on RDS automated backups and snapshots.
 - Prefer RDS automated backups for production.

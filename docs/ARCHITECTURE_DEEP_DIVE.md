@@ -9,9 +9,10 @@ flowchart LR
     User["Owner / Operator / Client"] --> Browser["Browser"]
     Browser --> Domain["agenticgrowthlabs.com"]
     Domain --> CDN["CloudFront / HTTPS routing"]
-    CDN --> EB["AWS Elastic Beanstalk"]
-    EB --> Docker["Docker Container"]
-    Docker --> FastAPI["FastAPI App"]
+    CDN --> ALB["Shared Application Load Balancer"]
+    ALB --> FastAPI["Isolated ECS Web Service"]
+    Scheduler["EventBridge Scheduler"] --> SQS["SQS"]
+    SQS --> Worker["Isolated ECS Worker"]
     FastAPI --> UI["Static Dashboard Assets"]
     FastAPI --> Agents["Agent Layer"]
     FastAPI --> DB["PostgreSQL Database"]
@@ -64,9 +65,9 @@ Database:
 
 Deployment:
 
-- deployment script: `deploy/deploy_marketing_agent_eb.py`;
-- runtime: Docker;
-- AWS service: Elastic Beanstalk;
+- runtime: one Docker image with web and worker modes;
+- AWS services: CloudFront, shared ALB, ECS, EventBridge Scheduler, SQS/DLQ, RDS, S3, and SSM;
+- isolation: application-specific services, roles, target group, queue, secrets, database/role, and storage namespace;
 - region: `ap-south-1`.
 
 ## Request Flow: Dashboard
@@ -197,4 +198,3 @@ AWS is used for:
 - database/networking;
 - deployment;
 - infrastructure operations.
-

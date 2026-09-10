@@ -1,100 +1,24 @@
-# AWS Deployment Notes
+# AWS Production Deployment
 
-This app is packaged for either Docker-based Elastic Beanstalk or a direct EC2 service.
+Last updated: 10 September 2026.
 
-## Required Secrets
+`agenticgrowthlabs.com` remains live through CloudFront -> shared ALB -> isolated Marketing Agent ECS web service. A separate ECS worker consumes the application's SQS queue. Production Google synchronization is triggered by EventBridge Scheduler at 08:30 `Asia/Kolkata`.
 
-- `OPENAI_API_KEY`: Your OpenAI key for research and page generation.
-- `SECRET_KEY`: Long random string for production.
-- `API_KEY`: Optional shared key for protected write APIs. Leave blank only for internal prototypes.
-
-## Elastic Beanstalk
-
-1. Create an Elastic Beanstalk Docker environment.
-2. Store application settings and secrets under `/marketing-agent/prod` in SSM Parameter Store.
-3. Set only the non-secret runtime bootstrap values in Elastic Beanstalk:
-
-   ```text
-   AWS_REGION=ap-south-1
-   SSM_ENABLED=true
-   SSM_PARAMETER_PATH=/marketing-agent/prod
-   SSM_FAIL_FAST=true
-   SSM_REQUIRED_PARAMETERS=database-url,secret-key
-   ```
-
-   The application retrieves all parameters recursively with decryption during startup. Required
-   parameters must exist and be non-empty. SSM values
-   override same-named EB environment values, so the runtime never depends on copied secret values.
-4. Attach an EBS volume or use a managed database for durable state.
-5. If you keep SQLite for the first deployment, mount persistent storage at `/app/data`.
-6. Prefer RDS Postgres for production traffic by storing `database-url` as a SecureString.
-
-The EC2 instance role receives a dedicated inline policy named
-`marketing-agent-ssm-parameter-read`. It grants only `ssm:GetParametersByPath` on:
+The application shares the ALB, ARM ECS capacity, and physical RDS instance with the other applications. It retains independent target group, services/task roles, secrets/SSM path, queue/DLQ, logical PostgreSQL database and role, and S3 namespace.
 
 ```text
-arn:aws:ssm:ap-south-1:<account-id>:parameter/marketing-agent/prod/*
+GOOGLE_SYNC_SCHEDULER_BACKEND=eventbridge
+WORKER_QUEUE_URL=<queue-url>
+SERVICE_MODE=worker                 # worker task only
+PUBLIC_BASE_URL=https://agenticgrowthlabs.com
+SSM_ENABLED=true
+SSM_PARAMETER_PATH=/marketing-agent/prod
 ```
 
-SecureString decryption is limited to calls routed through the regional SSM service. Set
-`SSM_KMS_KEY_ARN` while running the deployment script to restrict `kms:Decrypt` to a customer-managed
-key; otherwise the policy uses `*` with the `kms:ViaService` condition for compatibility with the
-AWS-managed SSM key. The deployment script applies the policy idempotently to
-`marketing-agent-eb-ec2-role` and removes legacy secret-bearing EB environment entries.
+Keep database, OpenAI, API key, Google, email, and third-party credentials in SSM/Secrets Manager. The ECS task role needs least-privilege access only to this application's parameters, queue, S3 namespace, logs, and required KMS keys.
 
-Verify the deployed permission with:
+Build one immutable ARM-compatible image and deploy its digest to both task definitions. Update the worker before the web service, wait for stability, then test health, protected APIs, campaign generation, public pages, lead capture, approval/publish, analytics, and one queued Google sync. Monitor ALB errors, ECS restarts, EventBridge failures, queue age/DLQ, RDS, and sync audit records.
 
-```bash
-aws iam get-role-policy \
-  --role-name marketing-agent-eb-ec2-role \
-  --policy-name marketing-agent-ssm-parameter-read
-```
+Rollback uses preceding ECS task definitions. The old Elastic Beanstalk environment is paused for a temporary 7–14 day rollback window and is not the active runtime.
 
-Current production Elastic Beanstalk deployment:
-
-```text
-Application: marketing-agent-eb-app
-Environment: marketing-agent-eb-prod
-Region: ap-south-1
-Elastic Beanstalk URL: http://marketing-agent-prod.ap-south-1.elasticbeanstalk.com
-Production URL: https://agenticgrowthlabs.com
-Alternate URLs: https://www.agenticgrowthlabs.com, https://app.agenticgrowthlabs.com
-Database: marketing-agent-prod-postgres
-S3 bucket: marketing-agent-prod-453732174568-ap-south-1
-```
-
-Current HTTPS routing:
-
-```text
-Route 53 hosted zone: agenticgrowthlabs.com / Z087564836Z3AAI4ODFFL
-ACM certificate region: us-east-1
-CloudFront distribution: EMF08K2YPZEP
-CloudFront domain: d31dps223ry9uk.cloudfront.net
-PUBLIC_BASE_URL: https://agenticgrowthlabs.com
-```
-
-Production PostgreSQL connection details and SQL inspection queries are documented in:
-
-```text
-docs/POSTGRES_QUERY_ARTIFACT.md
-```
-
-## S3
-
-The current prototype does not require S3 because generated landing pages and leads are stored in the database.
-Use S3 later for uploaded brand assets, generated images, exports, and audit archive snapshots.
-
-## Production Checklist
-
-- Keep HTTPS enabled through CloudFront and ACM.
-- Set `API_KEY` and send it as `x-api-key` for admin write APIs.
-- Restrict `ALLOWED_ORIGINS` to your dashboard domain.
-- Move from SQLite to RDS Postgres before multi-instance scaling.
-- Configure CloudWatch log retention and alarms for `/health`.
-- Back up the database and export audit events regularly.
-
-## Related Docs
-
-- `docs/AWS_DEPLOYMENT_WALKTHROUGH.md`
-- `docs/SECURITY_AND_COMPLIANCE.md`
-- `docs/OPERATIONS_RUNBOOK.md`
+See [deployment walkthrough](AWS_DEPLOYMENT_WALKTHROUGH.md), [environment and secrets](AWS_ENVIRONMENT_AND_SECRETS.md), [operations](OPERATIONS_RUNBOOK.md), and [code walkthrough](CODE_WALKTHROUGH.md).

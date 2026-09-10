@@ -16,35 +16,15 @@ AWS region:
 ap-south-1
 ```
 
-Elastic Beanstalk application:
-
-```text
-marketing-agent-eb-app
-```
-
-Elastic Beanstalk environment:
-
-```text
-marketing-agent-eb-prod
-```
-
-Elastic Beanstalk CNAME:
-
-```text
-marketing-agent-prod.ap-south-1.elasticbeanstalk.com
-```
+Active hosting: CloudFront -> shared ALB -> isolated ECS web service, with EventBridge -> SQS ->
+isolated ECS worker for the daily Google sync.
 
 ## Runtime
 
-Platform:
+The app is a Dockerized FastAPI service. The same ARM-compatible image runs in ECS web and worker
+modes on shared EC2 capacity.
 
-```text
-Docker running on 64bit Amazon Linux 2023
-```
-
-The app is a Dockerized FastAPI service. AWS Elastic Beanstalk runs the container.
-
-## Deployment Script
+## Legacy Deployment Script
 
 Main deployment file:
 
@@ -52,7 +32,9 @@ Main deployment file:
 deploy/deploy_marketing_agent_eb.py
 ```
 
-What it does:
+`deploy/deploy_marketing_agent_eb.py` documents the former Elastic Beanstalk release path. It is
+retained only for rollback history during the temporary observation window and must not be used
+for a normal production deployment. Historically it:
 
 - builds the deployment zip;
 - uploads the source bundle to S3;
@@ -159,7 +141,7 @@ Recommended owner practice:
 
 - store long-lived production secrets in SSM SecureString parameters;
 - keep only `AWS_REGION`, `SSM_ENABLED`, `SSM_PARAMETER_PATH`, `SSM_FAIL_FAST`, and
-  `SSM_REQUIRED_PARAMETERS` as EB bootstrap values;
+  `SSM_REQUIRED_PARAMETERS` as ECS bootstrap values;
 - SSM parameters take precedence over same-named environment values;
 - keep `SSM_FAIL_FAST=true` in production so missing IAM access, missing paths, or AWS failures stop startup instead of silently using stale values;
 - parameter names map from kebab case to application setting names, for example `openai-api-key` becomes `OPENAI_API_KEY` and `database-url` becomes `DATABASE_URL`.
@@ -219,16 +201,17 @@ If a secret is exposed in a screenshot or chat, rotate it.
 
 ## After Changing AWS Values
 
-If values are changed directly in Elastic Beanstalk Configuration:
+If ECS bootstrap values are changed:
 
 1. Save changes.
-2. Wait for environment update to complete.
-3. Confirm health is `Ok`.
+2. Register a new task-definition revision and update both affected services.
+3. Wait for ECS services and ALB targets to become healthy.
 4. Run `/health`.
 
 Google Ads note:
 
-After adding or rotating Google Ads values, the already deployed container will use the new values only after Elastic Beanstalk finishes updating/restarting the environment. No separate code deploy is required for environment-only secret changes, but a code deploy is required for new application features.
+After rotating Google Ads values, force a new ECS deployment so new processes reload settings. No
+new image is required for a secret-only change.
 
 If values are changed in SSM:
 
@@ -239,8 +222,7 @@ If values are changed in SSM:
 `/health` reports `ssm_runtime_loading` and `ssm_parameters_loaded` without exposing parameter names
 or decrypted values.
 
-The Elastic Beanstalk EC2 instance role uses the dedicated inline policy
-`marketing-agent-ssm-parameter-read`. Its SSM resource is restricted to
+The Marketing ECS task role uses a dedicated SSM read policy. Its SSM resource is restricted to
 `parameter/marketing-agent/prod/*`; it does not grant account-wide Parameter Store reads.
 
 ## Google Server And Play Store Clarification
